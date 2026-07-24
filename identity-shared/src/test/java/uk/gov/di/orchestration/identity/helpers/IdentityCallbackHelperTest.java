@@ -7,16 +7,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import uk.gov.di.orchestration.identity.exceptions.IdentityCallbackException;
 import uk.gov.di.orchestration.shared.api.CommonFrontend;
+import uk.gov.di.orchestration.shared.api.OidcAPI;
+import uk.gov.di.orchestration.shared.entity.LevelOfConfidence;
 import uk.gov.di.orchestration.shared.services.DynamoIdentityService;
 import uk.gov.di.orchestration.sharedtest.logging.CaptureLoggingExtension;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static com.nimbusds.oauth2.sdk.OAuth2Error.ACCESS_DENIED;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,8 +33,12 @@ import static uk.gov.di.orchestration.sharedtest.logging.LogEventMatcher.withMes
 
 public class IdentityCallbackHelperTest {
     private static final URI FRONT_END_ERROR_URI = URI.create("https://example.com/error");
+    private static final URI TRUSTMARK_URI = URI.create("https://oidc.com/trustmark");
+    private static final Subject SUBJECT =
+            new Subject("urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6");
     private final CommonFrontend frontend = mock(CommonFrontend.class);
     private final DynamoIdentityService dynamoIdentityService = mock(DynamoIdentityService.class);
+    private final OidcAPI oidcApi = mock(OidcAPI.class);
     private IdentityCallbackHelper helper;
 
     @RegisterExtension
@@ -34,8 +47,9 @@ public class IdentityCallbackHelperTest {
 
     @BeforeEach
     void setUp() {
-        helper = new IdentityCallbackHelper(frontend, dynamoIdentityService);
+        helper = new IdentityCallbackHelper(frontend, dynamoIdentityService, oidcApi);
         when(frontend.errorURI()).thenReturn(FRONT_END_ERROR_URI);
+        when(oidcApi.trustmarkURI()).thenReturn(TRUSTMARK_URI);
     }
 
     @Nested
@@ -50,13 +64,16 @@ public class IdentityCallbackHelperTest {
                     new UserInfo(
                             new JSONObject(
                                     Map.of(
-                                            "sub", "sub-val",
-                                            "vot", "P2",
-                                            "vtm", "http://test-trustmark-uri",
+                                            "sub",
+                                            "sub-val",
+                                            "vot",
+                                            "P2",
+                                            "vtm",
+                                            "http://test-trustmark-uri",
                                             "https://vocab.account.gov.uk/v1/coreIdentity",
-                                                    "core-identity",
+                                            "core-identity",
                                             "https://vocab.account.gov.uk/v1/passport",
-                                                    "passport")));
+                                            "passport")));
             helper.saveIdentityClaimsToDynamo(
                     CLIENT_SESSION_ID, RP_PAIRWISE_SUBJECT, userInfo, SPOT_QUEUED_AT);
 
@@ -84,11 +101,14 @@ public class IdentityCallbackHelperTest {
                     new UserInfo(
                             new JSONObject(
                                     Map.of(
-                                            "sub", "sub-val",
-                                            "vot", "P2",
-                                            "vtm", "http://test-trustmark-uri",
+                                            "sub",
+                                            "sub-val",
+                                            "vot",
+                                            "P2",
+                                            "vtm",
+                                            "http://test-trustmark-uri",
                                             "https://vocab.account.gov.uk/v1/passport",
-                                                    "passport")));
+                                            "passport")));
             helper.saveIdentityClaimsToDynamo(
                     CLIENT_SESSION_ID, RP_PAIRWISE_SUBJECT, userInfo, SPOT_QUEUED_AT);
 
@@ -186,6 +206,71 @@ public class IdentityCallbackHelperTest {
                             "P2",
                             "",
                             null);
+        }
+    }
+
+    @Nested
+    class ValidateUserIdentityResponse {
+        @Test
+        void shouldThrowExceptionForSubMismatch() {
+            var userInfo = new UserInfo(new Subject("a-different-subject-claim"));
+            userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
+            userInfo.setClaim("vtm", TRUSTMARK_URI);
+            var exception =
+                    assertThrows(
+                            IdentityCallbackException.class,
+                            () ->
+                                    helper.validateUserIdentityResponse(
+                                            userInfo,
+                                            List.of(LevelOfConfidence.MEDIUM_LEVEL),
+                                            SUBJECT.getValue()));
+
+            assertEquals(
+                    "Subject (sub) claim in identity information does not match session",
+                    exception.getMessage());
+        }
+
+        @Test
+        void shouldReturnAccessDeniedIfVotDoesNotContainRequestedLoCs()
+                throws IdentityCallbackException {
+            var userInfo = new UserInfo(SUBJECT);
+            userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
+
+            var result =
+                    helper.validateUserIdentityResponse(
+                            userInfo, List.of(LevelOfConfidence.NONE), SUBJECT.toString());
+
+            assertTrue(result.isPresent());
+            assertThat(result.get(), equalTo(ACCESS_DENIED));
+        }
+
+        @Test
+        void shouldThrowExceptionWhenVtmDoesNotEqualTrustmarkUrl() {
+            var userInfo = new UserInfo(SUBJECT);
+            userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
+            userInfo.setClaim("vtm", "http://different-trustmark-url");
+
+            assertThrows(
+                    IdentityCallbackException.class,
+                    () ->
+                            helper.validateUserIdentityResponse(
+                                    userInfo,
+                                    List.of(LevelOfConfidence.MEDIUM_LEVEL),
+                                    SUBJECT.toString()));
+        }
+
+        @Test
+        void shouldNotReturnErrorIfVotHasRequestedLoCAndVtmMatchesTrustmarkUrl()
+                throws IdentityCallbackException {
+            var userInfo = new UserInfo(SUBJECT);
+            userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
+            userInfo.setClaim("vtm", TRUSTMARK_URI);
+
+            var result =
+                    helper.validateUserIdentityResponse(
+                            userInfo, List.of(LevelOfConfidence.MEDIUM_LEVEL), SUBJECT.toString());
+
+            assertTrue(result.isEmpty());
         }
     }
 }
