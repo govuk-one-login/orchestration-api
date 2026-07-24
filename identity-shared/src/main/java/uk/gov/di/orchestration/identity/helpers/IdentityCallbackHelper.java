@@ -1,31 +1,41 @@
 package uk.gov.di.orchestration.identity.helpers;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.nimbusds.oauth2.sdk.ErrorObject;
+import com.nimbusds.oauth2.sdk.OAuth2Error;
 import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.gov.di.orchestration.identity.exceptions.IdentityCallbackException;
 import uk.gov.di.orchestration.shared.api.CommonFrontend;
+import uk.gov.di.orchestration.shared.api.OidcAPI;
 import uk.gov.di.orchestration.shared.entity.IdentityClaims;
+import uk.gov.di.orchestration.shared.entity.LevelOfConfidence;
 import uk.gov.di.orchestration.shared.entity.ValidClaims;
 import uk.gov.di.orchestration.shared.services.DynamoIdentityService;
 import uk.gov.di.orchestration.shared.services.RedirectService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static uk.gov.di.orchestration.shared.entity.IdentityClaims.VOT;
+import static uk.gov.di.orchestration.shared.entity.IdentityClaims.VTM;
 
 public class IdentityCallbackHelper {
 
     private static final Logger LOG = LogManager.getLogger(IdentityCallbackHelper.class);
     private final CommonFrontend frontend;
     private final DynamoIdentityService dynamoIdentityService;
+    private final OidcAPI oidcAPI;
 
     public IdentityCallbackHelper(
-            CommonFrontend frontend, DynamoIdentityService dynamoIdentityService) {
+            CommonFrontend frontend, DynamoIdentityService dynamoIdentityService, OidcAPI oidcAPI) {
         this.frontend = frontend;
         this.dynamoIdentityService = dynamoIdentityService;
+        this.oidcAPI = oidcAPI;
     }
 
     public void saveIdentityClaimsToDynamo(
@@ -59,6 +69,24 @@ public class IdentityCallbackHelper {
                 (String) userIdentityUserInfo.getClaim(VOT.getValue()),
                 ipvCoreIdentityString,
                 spotQueuedAt);
+    }
+
+    public Optional<ErrorObject> validateUserIdentityResponse(
+            UserInfo userIdentityUserInfo, List<LevelOfConfidence> locList)
+            throws IdentityCallbackException {
+        LOG.info("Validating userinfo response");
+        for (LevelOfConfidence loc : locList) {
+            if (loc.getValue().equals(userIdentityUserInfo.getClaim(VOT.getValue()))) {
+
+                if (!oidcAPI.trustmarkURI().equals(userIdentityUserInfo.getClaim(VTM.getValue()))) {
+                    LOG.warn("VTM does not contain expected trustmark URL");
+                    throw new IdentityCallbackException("Identity trustmark is invalid");
+                }
+                return Optional.empty();
+            }
+        }
+        LOG.warn("User identity response missing vot or vot not in vtr list.");
+        return Optional.of(OAuth2Error.ACCESS_DENIED);
     }
 
     public APIGatewayProxyResponseEvent redirectToFrontendErrorPageWithErrorLog(Throwable error) {
