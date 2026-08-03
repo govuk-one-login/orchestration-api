@@ -21,15 +21,18 @@ import uk.gov.di.orchestration.audit.TxmaAuditUser;
 import uk.gov.di.orchestration.identity.entity.CrossBrowserNoSessionException;
 import uk.gov.di.orchestration.identity.entity.CrossBrowserStateMismatchException;
 import uk.gov.di.orchestration.identity.entity.IdentityContext;
+import uk.gov.di.orchestration.identity.entity.LogIds;
 import uk.gov.di.orchestration.identity.exceptions.IdentityCallbackException;
 import uk.gov.di.orchestration.identity.helpers.IdentityCallbackHelper;
 import uk.gov.di.orchestration.identity.service.IdentityContextService;
+import uk.gov.di.orchestration.identity.service.IdentitySPOTService;
 import uk.gov.di.orchestration.shared.entity.ClientRegistry;
 import uk.gov.di.orchestration.shared.entity.ResponseHeaders;
 import uk.gov.di.orchestration.shared.entity.VectorOfTrust;
 import uk.gov.di.orchestration.shared.exceptions.NoSessionException;
 import uk.gov.di.orchestration.shared.exceptions.UnsuccessfulCredentialResponseException;
 import uk.gov.di.orchestration.shared.helpers.IpAddressHelper;
+import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.helpers.PersistentIdHelper;
 import uk.gov.di.orchestration.shared.oauth.OAuthService;
 import uk.gov.di.orchestration.shared.services.AuditService;
@@ -47,6 +50,7 @@ import static java.lang.String.format;
 import static uk.gov.di.orchestration.shared.entity.ValidClaims.RETURN_CODE;
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
 import static uk.gov.di.orchestration.shared.helpers.AuditHelper.attachTxmaAuditFieldFromHeaders;
+import static uk.gov.di.orchestration.shared.helpers.ClientSubjectHelper.getSectorIdentifierForClient;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.AWS_REQUEST_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.CLIENT_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachIpAddressAndUserAgentToLogs;
@@ -69,6 +73,7 @@ public class SISCallbackHandler
     private final EndOfJourneyService endOfJourneyService;
     private final OAuthService sisAuthorisationService;
     private final InitiateIPVAuthorisationService ipvAuthorisationService;
+    private final IdentitySPOTService identitySPOTService;
 
     public SISCallbackHandler(
             ConfigurationService configurationService,
@@ -77,7 +82,8 @@ public class SISCallbackHandler
             AuditService auditService,
             EndOfJourneyService endOfJourneyService,
             OAuthService sisAuthorisationService,
-            InitiateIPVAuthorisationService ipvAuthorisationService) {
+            InitiateIPVAuthorisationService ipvAuthorisationService,
+            IdentitySPOTService identitySPOTService) {
         this.configurationService = configurationService;
         this.identityCallbackHelper = identityCallbackHelper;
         this.identityContextService = identityContextService;
@@ -85,6 +91,7 @@ public class SISCallbackHandler
         this.endOfJourneyService = endOfJourneyService;
         this.sisAuthorisationService = sisAuthorisationService;
         this.ipvAuthorisationService = ipvAuthorisationService;
+        this.identitySPOTService = identitySPOTService;
     }
 
     @Override
@@ -113,7 +120,6 @@ public class SISCallbackHandler
             var clientRegistry = identityContext.clientRegistry();
             var clientId = clientRegistry.getClientID();
             var authUserInfo = identityContext.authUserInfo();
-            var authRequest = identityContext.authRequest();
 
             var persistentId =
                     PersistentIdHelper.extractPersistentIdFromCookieHeader(input.getHeaders());
@@ -166,6 +172,11 @@ public class SISCallbackHandler
             if (redirect.isPresent()) {
                 return redirect.get();
             }
+
+            LOG.info("SPOT will be invoked.");
+            queueSPOTRequest(identityContext, auditContext, context, userIdentityUserInfo);
+
+            return waitForSPOT(identityContext, auditContext, user);
         } catch (IdentityCallbackException e) {
             return identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(e);
         } catch (NoSessionException e) {
@@ -175,8 +186,13 @@ public class SISCallbackHandler
                     new Error("Cannot retrieve auth request params from client session id"));
         } catch (UnsuccessfulCredentialResponseException e) {
             return identityCallbackHelper.redirectToFrontendErrorPageWithWarnLog(e);
+        } catch (InterruptedException e) {
+            return identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(
+                    new Error(
+                            String.format(
+                                    "Failed to poll for identity progress status. Error: %s",
+                                    e.getMessage())));
         }
-        return null;
     }
 
     private TokenResponse makeTokenRequest(String authCode, String clientId, TxmaAuditUser user)
@@ -366,5 +382,72 @@ public class SISCallbackHandler
                             null));
         }
         return Optional.empty();
+    }
+
+    private void queueSPOTRequest(
+            IdentityContext identityContext,
+            AuditContext auditContext,
+            Context context,
+            UserInfo userIdentityUserInfo) {
+        var logIds =
+                new LogIds(
+                        identityContext.orchSessionItem().getSessionId(),
+                        auditContext.persistentSessionId(),
+                        context.getAwsRequestId(),
+                        identityContext.clientRegistry().getClientID(),
+                        identityContext.orchClientSessionItem().getClientSessionId());
+        identitySPOTService.queueSPOTRequest(
+                logIds,
+                getSectorIdentifierForClient(
+                        identityContext.clientRegistry(),
+                        configurationService.getInternalSectorURI()),
+                identityContext.authUserInfo(),
+                new Subject(identityContext.orchClientSessionItem().getRpPairwiseId()),
+                userIdentityUserInfo,
+                identityContext.clientRegistry().getClientID(),
+                auditContext);
+
+        var spotQueuedAt = NowHelper.now().toInstant().toEpochMilli();
+
+        identityCallbackHelper.saveIdentityClaimsToDynamo(
+                identityContext.orchClientSessionItem().getClientSessionId(),
+                new Subject(identityContext.orchClientSessionItem().getRpPairwiseId()),
+                userIdentityUserInfo,
+                spotQueuedAt);
+    }
+
+    private APIGatewayProxyResponseEvent waitForSPOT(
+            IdentityContext identityContext, AuditContext auditContext, TxmaAuditUser user)
+            throws InterruptedException {
+        var redirectOpt =
+                identitySPOTService.waitForSpot(
+                        identityContext.orchClientSessionItem().getClientSessionId(), auditContext);
+        if (redirectOpt.isPresent()) {
+            return redirectOpt.get();
+        }
+        var aisResponse =
+                endOfJourneyService.getAndCheckForIntervention(
+                        identityContext.orchSessionItem(),
+                        auditContext,
+                        user,
+                        identityContext.clientRegistry().getClientID(),
+                        false);
+        if (aisResponse.isPresent()) {
+            return aisResponse.get();
+        }
+        var successRedirectUri =
+                endOfJourneyService
+                        .generateSuccessfulAuthResponse(
+                                identityContext.authRequest(),
+                                identityContext.clientRegistry().getClientID(),
+                                identityContext.orchClientSessionItem().getClientSessionId(),
+                                identityContext.authUserInfo().getEmailAddress(),
+                                identityContext.orchSessionItem())
+                        .toURI();
+        auditService.submitAuditEventNoPrefix(
+                AUTH_AUTH_CODE_ISSUED, identityContext.clientRegistry().getClientID(), user);
+        // TODO: send cloudwatch metrics for sis journey completed
+        return generateApiGatewayProxyResponse(
+                302, "", Map.of(ResponseHeaders.LOCATION, successRedirectUri.toString()), null);
     }
 }
