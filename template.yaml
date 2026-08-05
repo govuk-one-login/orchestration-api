@@ -3092,12 +3092,81 @@ Resources:
                   !Ref Environment,
                   serviceDomain,
                 ]
+          SIS_ENABLED: !If
+            - SisEnabled
+            - true
+            - false
+          SIS_AUDIENCE: !If
+            - IpvExists
+            - !Sub
+              - https://reuse-identity.${ServiceDomain}
+              - ServiceDomain:
+                  !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
+            - !Sub
+              - https://sisstub.oidc.${ServiceDomain}
+              - ServiceDomain:
+                  !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
+          SIS_AUTHORISATION_CALLBACK_URI: !Sub
+            - https://oidc.${ServiceDomain}/sis-callback
+            - ServiceDomain:
+                !FindInMap [
+                  EnvironmentConfiguration,
+                  !Ref Environment,
+                  serviceDomain,
+                ]
+          SIS_AUTHORISATION_CLIENT_ID: authOrchestrator
+          SIS_AUTHORISATION_URI: !If
+            - IpvExists
+            - !Sub
+              - https://reuse-identity.${ServiceDomain}/oauth2/authorize
+              - ServiceDomain:
+                  !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
+            - !Sub
+              - https://sisstub.oidc.${ServiceDomain}/authorize
+              - ServiceDomain:
+                  !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
+          SIS_TOKEN_SIGNING_KEY_ALIAS: !Ref OrchSISTokenSigningKmsKeyAlias
+          SIS_JWKS_URL: !If
+            - IpvExists
+            - !Sub
+              - https://reuse-identity.${ServiceDomain}/.well-known/jwks.json
+              - ServiceDomain:
+                  !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
+            - !Sub
+              - https://sisstub.oidc.${ServiceDomain}/.well-known/jwks.json
+              - ServiceDomain:
+                  !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
       Policies:
         - !Ref ClientRegistryTableReadAccessPolicy
         - !Ref AuthUserInfoTableReadWriteAccessPolicy
         - !Ref TxmaQueueSendPermissionPolicy
         - !Ref StorageTokenSigningKmsAccessPolicy
         - !Ref IpvTokenSigningKmsAccessPolicy
+        - !Ref SISTokenSigningKmsAccessPolicy
         - !Ref OrchToAuthSigningKmsAccessPolicy
         - !Ref AuthPublicEncryptionKeyAccessPolicy
         - !Ref AccountInterventionsServiceUriSecretAccessPolicy
