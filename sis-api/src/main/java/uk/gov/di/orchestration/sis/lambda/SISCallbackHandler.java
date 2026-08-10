@@ -6,7 +6,6 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
-import static uk.gov.di.orchestration.shared.helpers.InstrumentationHelper.segmentedFunctionCall;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachIpAddressAndUserAgentToLogs;
 
 public class SISCallbackHandler
@@ -16,11 +15,6 @@ public class SISCallbackHandler
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
         attachIpAddressAndUserAgentToLogs(input);
-        return segmentedFunctionCall(
-                "oidc-api::" + getClass().getSimpleName(), this::sisCallbackHandler);
-    }
-
-    public APIGatewayProxyResponseEvent sisCallbackHandler() {
         return generateApiGatewayProxyResponse(200, "Test lambda", null, null);
     }
 }
