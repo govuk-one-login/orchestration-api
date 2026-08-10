@@ -53,7 +53,6 @@ import static uk.gov.di.orchestration.shared.domain.RequestHeaders.CLIENT_SESSIO
 import static uk.gov.di.orchestration.shared.domain.RequestHeaders.SESSION_ID_HEADER;
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyErrorResponse;
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
-import static uk.gov.di.orchestration.shared.helpers.InstrumentationHelper.segmentedFunctionCall;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.AWS_REQUEST_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.CLIENT_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.CLIENT_SESSION_ID;
@@ -131,16 +130,11 @@ public class AuthCodeHandler
         attachTraceId();
         attachIpAddressAndUserAgentToLogs(input);
         attachLogFieldToLogs(AWS_REQUEST_ID, context.getAwsRequestId());
-        return segmentedFunctionCall(
-                "oidc-api::" + getClass().getSimpleName(),
-                () -> authCodeRequestHandler(input, context));
-    }
 
-    public APIGatewayProxyResponseEvent authCodeRequestHandler(
-            APIGatewayProxyRequestEvent input, Context context) {
         String sessionId;
         OrchSessionItem orchSession;
         String clientSessionId;
+
         try {
             sessionId =
                     getHeaderValueFromHeaders(

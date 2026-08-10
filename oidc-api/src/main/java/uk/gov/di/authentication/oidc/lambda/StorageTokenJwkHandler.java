@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
-import static uk.gov.di.orchestration.shared.helpers.InstrumentationHelper.segmentedFunctionCall;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.AWS_REQUEST_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachIpAddressAndUserAgentToLogs;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachLogFieldToLogs;
@@ -51,7 +50,7 @@ public class StorageTokenJwkHandler
     @Override
     public void beforeCheckpoint(org.crac.Context<? extends Resource> context) throws Exception {
         LOG.info("Executing before checkpoint");
-        this.storageTokenJwkRequestHandler();
+        this.generateStorageTokenJwkResponse();
         // Empty key cache, so we can force the key to be re-fetched everytime
         // the SnapStart image is restored. This allows us to fetch the key
         // on every restore, but continue to cache it for the duration that
@@ -69,11 +68,11 @@ public class StorageTokenJwkHandler
         attachTraceId();
         attachIpAddressAndUserAgentToLogs(input);
         attachLogFieldToLogs(AWS_REQUEST_ID, context.getAwsRequestId());
-        return segmentedFunctionCall(
-                "oidc-api::" + getClass().getSimpleName(), this::storageTokenJwkRequestHandler);
+
+        return generateStorageTokenJwkResponse();
     }
 
-    public APIGatewayProxyResponseEvent storageTokenJwkRequestHandler() {
+    public APIGatewayProxyResponseEvent generateStorageTokenJwkResponse() {
         try {
             LOG.info("StorageTokenJwk request received");
 
@@ -86,10 +85,7 @@ public class StorageTokenJwkHandler
             LOG.info("Generating StorageTokenJwk successful response");
 
             return generateApiGatewayProxyResponse(
-                    200,
-                    segmentedFunctionCall("serialiseJWKSet", () -> jwkSet.toString(true)),
-                    Map.of("Cache-Control", "max-age=86400"),
-                    null);
+                    200, jwkSet.toString(true), Map.of("Cache-Control", "max-age=86400"), null);
         } catch (Exception e) {
             LOG.error("Error in StorageTokenJwk lambda", e);
             return generateApiGatewayProxyResponse(500, "Error providing StorageTokenJwk data");
