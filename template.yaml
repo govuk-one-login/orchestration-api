@@ -107,7 +107,7 @@ Conditions:
       !Equals [integration, !Ref Environment],
       !Equals [production, !Ref Environment],
     ]
-
+  SisEnabled: !Equals [dev, !Ref Environment]
   # Comment to force re-deployment of template - this can be deleted once the staging API GW/CloudFront migration is complete.
 
 Mappings:
@@ -5175,6 +5175,17 @@ Resources:
         - !Ref StorageTokenSigningKmsAccessPolicy
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
+
+  SISCallbackFunctionOrchestrationApiPermission:
+    Condition: SisEnabled
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SISCallbackFunction.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub
+        - "arn:aws:execute-api:eu-west-2:${AWS::AccountId}:${ApiId}/*/GET/sis-callback"
+        - ApiId: !Ref OrchestrationOidcApi
 
   SISCallbackFunctionLogGroup:
     Type: AWS::Logs::LogGroup
