@@ -18,6 +18,7 @@ import uk.gov.di.authentication.shared.entity.CountType;
 import uk.gov.di.authentication.shared.entity.ErrorResponse;
 import uk.gov.di.authentication.shared.entity.UserProfile;
 import uk.gov.di.authentication.shared.helpers.ClientSubjectHelper;
+import uk.gov.di.authentication.shared.helpers.NowHelper;
 import uk.gov.di.authentication.shared.helpers.SaltHelper;
 import uk.gov.di.authentication.shared.serialization.Json;
 import uk.gov.di.authentication.shared.services.AuditService;
@@ -32,6 +33,8 @@ import uk.gov.di.authentication.userpermissions.PermissionDecisionManager;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -83,6 +86,7 @@ class AuthenticationAuthCodeHandlerTest {
                     TEST_SUBJECT_ID, TEST_SECTOR_IDENTIFIER, TEST_SALT);
     private static final String CALCULATED_PAIRWISE_ID = "some-rp-pairwise-id";
     private static final Long PASSWORD_RESET_TIME = 1696869005821L;
+    private static final Date TEST_NOW_DATE = new Date(4102444800000L);
 
     private AuthenticationAuthCodeHandler handler;
     private static final Json objectMapper = SerializationService.getInstance();
@@ -147,11 +151,16 @@ class AuthenticationAuthCodeHandlerTest {
         @Test
         void shouldReturn200AndSaveNewAuthCodeRequest() throws URISyntaxException {
             when(configurationService.getAuthCodeExpiry()).thenReturn(Long.valueOf(12));
-            var userProfile = new UserProfile();
-            userProfile.setSubjectID(TEST_SUBJECT_ID);
+            var userProfile = new UserProfile()
+                    .withSubjectID(TEST_SUBJECT_ID)
+                    .withEmail(EMAIL);
             when(authenticationService.getUserProfileFromEmail(CommonTestVariables.EMAIL))
                     .thenReturn(Optional.of(userProfile));
             var event = validAuthCodeRequest();
+            MockedStatic<NowHelper> mockedNowHelperClass = Mockito.mockStatic(NowHelper.class);
+            mockedNowHelperClass
+                    .when(NowHelper::now)
+                    .thenReturn(TEST_NOW_DATE);
 
             var result = handler.handleRequest(event, context);
 
@@ -174,6 +183,9 @@ class AuthenticationAuthCodeHandlerTest {
             assertTrue(uri.getQuery().contains("state"));
             assertTrue(uri.getQuery().contains(TEST_STATE));
             assertFalse(uri.getQuery().contains("random_query_parameter"));
+
+            verify(authenticationService, times(1))
+                    .updateLastSignedIn(EMAIL);
 
             verify(cloudwatchMetricsService)
                     .incrementCounter(

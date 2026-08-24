@@ -181,6 +181,17 @@ public class DynamoService implements AuthenticationService {
     }
 
     @Override
+    public void updateLastSignedIn(String email) {
+        dynamoUserProfileTable
+                .updateItem(
+                        dynamoUserProfileTable.getItem(
+                                Key.builder()
+                                        .partitionValue(email.toLowerCase(Locale.ROOT))
+                                        .build()))
+                .withLastSignedIn(NowHelper.now().toInstant().toString());
+    }
+
+    @Override
     public UserProfile getUserProfileByEmail(String email) {
         return dynamoUserProfileTable.getItem(
                 Key.builder().partitionValue(email.toLowerCase(Locale.ROOT)).build());

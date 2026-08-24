@@ -16,6 +16,7 @@ import uk.gov.di.authentication.shared.domain.CloudwatchMetrics;
 import uk.gov.di.authentication.shared.entity.ErrorResponse;
 import uk.gov.di.authentication.shared.helpers.ClientSubjectHelper;
 import uk.gov.di.authentication.shared.helpers.IpAddressHelper;
+import uk.gov.di.authentication.shared.helpers.NowHelper;
 import uk.gov.di.authentication.shared.helpers.PersistentIdHelper;
 import uk.gov.di.authentication.shared.lambda.BaseFrontendHandler;
 import uk.gov.di.authentication.shared.serialization.Json.JsonException;
@@ -133,6 +134,9 @@ public class AuthenticationAuthCodeHandler extends BaseFrontendHandler<AuthCodeR
 
             var state = State.parse(authCodeRequest.state());
             var redirectUri = URI.create(authCodeRequest.redirectUri());
+
+            authenticationService.updateLastSignedIn(userProfile.get().getEmail());
+
             var authorizationResponse =
                     new AuthorizationSuccessResponse(
                             redirectUri, authorisationCode, null, state, null);

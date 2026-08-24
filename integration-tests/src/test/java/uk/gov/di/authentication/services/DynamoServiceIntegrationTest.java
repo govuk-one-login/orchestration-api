@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import uk.gov.di.authentication.shared.entity.PriorityIdentifier;
@@ -17,6 +18,7 @@ import uk.gov.di.authentication.shared.entity.UserCredentials;
 import uk.gov.di.authentication.shared.entity.UserProfile;
 import uk.gov.di.authentication.shared.entity.mfa.MFAMethod;
 import uk.gov.di.authentication.shared.entity.mfa.MFAMethodType;
+import uk.gov.di.authentication.shared.helpers.NowHelper;
 import uk.gov.di.authentication.shared.services.ConfigurationService;
 import uk.gov.di.authentication.shared.services.DynamoService;
 import uk.gov.di.authentication.sharedtest.extensions.UserStoreExtension;
@@ -1012,6 +1014,15 @@ class DynamoServiceIntegrationTest {
                     updatedUserProfile.getLastSkippedAddingPasskey(),
                     equalTo(fixedDateTime.toString()));
         }
+    }
+
+    @Test
+    void shouldSetLastSignedInOnUserProfile() {
+        MockedStatic<NowHelper> mockedNowHelperClass = Mockito.mockStatic(NowHelper.class);
+        mockedNowHelperClass
+                .when(NowHelper::now)
+                .thenReturn(TEST_NOW_DATE);
+
     }
 
     private void signUpWithPhoneNumber(String email, String subjectId, String phoneNumber) {
