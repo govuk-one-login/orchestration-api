@@ -53,7 +53,7 @@
   },
   {
     "ParameterKey": "OneLoginRepositoryName",
-    "ParameterValue": "authentication-api"
+    "ParameterValue": "orchestration-api"
   },
   {
     "ParameterKey": "RequireManualApproval",
@@ -94,5 +94,9 @@
   {
     "ParameterKey": "LambdaCanaryDeployment",
     "ParameterValue": "AllAtOnce"
+  },
+  {
+    "ParameterKey": "GitHubRepositoryID",
+    "ParameterValue": "1346007238"
   }
 ]
