@@ -148,17 +148,6 @@
           "provider": "GitHub",
           "checks": [
             {
-              "name": "code style and linting"
-            }
-          ],
-          "file": ".github/workflows/pre-merge-checks-terraform.yml",
-          "path": "$.jobs.terraform-fmt"
-        },
-        {
-          "phase": "pre-merge",
-          "provider": "GitHub",
-          "checks": [
-            {
               "name": "contract"
             }
           ],
