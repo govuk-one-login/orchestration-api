@@ -1,4 +1,4 @@
-rootProject.name = 'di-authentication-api'
+rootProject.name = 'orchestration-api'
 include 'account-management-api'
 include 'client-registry-api'
 include 'frontend-api'
