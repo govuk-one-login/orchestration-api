@@ -231,8 +231,8 @@ subprojects {
 
     // Check dependencies using:
     //
-    // ./gradlew :frontend-api:dependencyInsight --dependency guava  --configuration testRuntimeClasspath
-    // ./gradlew :frontend-api:dependencyInsight --dependency guava  --configuration runtimeClasspath
+    // ./gradlew :oidc-api:dependencyInsight --dependency guava  --configuration testRuntimeClasspath
+    // ./gradlew :oidc-api:dependencyInsight --dependency guava  --configuration runtimeClasspath
     //
     configurations.configureEach { conf ->
         exclude group: 'org.apache.tika', module: 'tika-parser-pdf-module'
