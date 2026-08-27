@@ -34,13 +34,6 @@ This should be done in a separate PR.
 
 - [ ] Lambdas have correct permissions for the resources they're accessing.
 
-<!-- Be careful when making changes to code in 'shared' components where each team has a copy.
-Check with counterparts to see if changes need to be made in the other team's code.
-In particular pay attention to classes representing Session data where changes need to be applied on both sides to avoid deserialization errors.
--->
-
-- [ ] Impact on orch and auth mutual dependencies has been checked.
-
 <!-- Changes required to contract tests?
 If there are changes to the API interaction between Orchestration and other services, the contract tests may need updating
 -->
