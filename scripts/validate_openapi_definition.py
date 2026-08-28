@@ -31,49 +31,75 @@ print(f"Validating OpenAPI definition: {openapi_definition_file}")
 for endpoint_name, methods in openapi_definition["paths"].items():
     for method_name, method_definition in methods.items():
         try:
+            if method_name == "Fn::If":
+                # Skip any endpoints which are conditional
+                # The parsing and logic of validating this is
+                # quite complicated and we should look to replace
+                # this with some tooling instead of this script
+                # See ATO-2854
+                continue
+
             # Check if the method definition has x-amazon-apigateway-integration
-            assert (
-                "x-amazon-apigateway-integration" in method_definition
-            ), f"Missing x-amazon-apigateway-integration for {method_name} {endpoint_name}"
+            assert "x-amazon-apigateway-integration" in method_definition, (
+                f"Missing x-amazon-apigateway-integration for {method_name} {endpoint_name}"
+            )
 
             api_integration = method_definition["x-amazon-apigateway-integration"]
 
             # Check if the x-amazon-apigateway-integration has type and it is
             # aws_proxy
-            assert (
-                "type" in api_integration
-            ), f"Missing type in x-amazon-apigateway-integration for {method_name} {endpoint_name}"
-            assert (
-                api_integration["type"] == "aws_proxy"
-            ), f"type in x-amazon-apigateway-integration for {method_name} {endpoint_name} is not aws_proxy"
+            assert "type" in api_integration, (
+                f"Missing type in x-amazon-apigateway-integration for {method_name} {endpoint_name}"
+            )
+
+            if api_integration["type"] == "mock":
+                # Skip any mock integrations
+                # These are less complicated than "real" integrations
+                # but again represent a parsing problem, like conditional endpoints.
+                # Given these are usually used to return static information
+                # such as a /robots.txt response, this is slightly safer
+                # to do. See ATO-2854
+                continue
+
+            assert api_integration["type"] == "aws_proxy", (
+                f"type in x-amazon-apigateway-integration for {method_name} {endpoint_name} is not aws_proxy"
+            )
 
             # Check if the x-amazon-apigateway-integration has uri and uri is
             # a terraform template variable
+            assert "uri" in api_integration, (
+                f"Missing uri in x-amazon-apigateway-integration for {method_name} {endpoint_name}"
+            )
             assert (
-                "uri" in api_integration
-            ), f"Missing uri in x-amazon-apigateway-integration for {method_name} {endpoint_name}"
-            assert (
-                re.search(r"\${.*}", api_integration["uri"]) is not None
-            ), f"uri in x-amazon-apigateway-integration for {method_name} {endpoint_name} is not a terraform template variable"
+                re.search(
+                    r"arn:aws:apigateway:\${AWS::Region}:lambda:path\/2015-03-31\/functions\/\$\{\w+\.Arn}:latest\/invocations$",
+                    api_integration["uri"]["Fn::Sub"],
+                )
+                is not None
+            ), (
+                f"uri in x-amazon-apigateway-integration for {method_name} {endpoint_name} is not a valid lambda invocation Arn for the latest version"
+            )
 
             # Check if the x-amazon-apigateway-integration has httpMethod and
             # it is POST
-            assert (
-                "httpMethod" in api_integration
-            ), f"Missing httpMethod in x-amazon-apigateway-integration for {method_name} {endpoint_name}"
-            assert (
-                api_integration["httpMethod"] == "POST"
-            ), f"httpMethod in x-amazon-apigateway-integration for {method_name} {endpoint_name} is not POST"
+            assert "httpMethod" in api_integration, (
+                f"Missing httpMethod in x-amazon-apigateway-integration for {method_name} {endpoint_name}"
+            )
+            assert api_integration["httpMethod"] == "POST", (
+                f"httpMethod in x-amazon-apigateway-integration for {method_name} {endpoint_name} is not POST"
+            )
 
             # Check if the x-amazon-apigateway-integration has timeoutInMillis
             # and it is an integer (50 <= x <= 2900)
-            assert (
-                "timeoutInMillis" in api_integration
-            ), f"Missing timeoutInMillis in x-amazon-apigateway-integration for {method_name} {endpoint_name}"
+            assert "timeoutInMillis" in api_integration, (
+                f"Missing timeoutInMillis in x-amazon-apigateway-integration for {method_name} {endpoint_name}"
+            )
             assert (
                 isinstance(api_integration["timeoutInMillis"], int)
                 and 50 <= api_integration["timeoutInMillis"] <= 29000
-            ), f"timeoutInMillis in x-amazon-apigateway-integration for {method_name} {endpoint_name} is not an integer between 50 and 29000"
+            ), (
+                f"timeoutInMillis in x-amazon-apigateway-integration for {method_name} {endpoint_name} is not an integer between 50 and 29000"
+            )
         except AssertionError as e:
             print(f"  {e}")
             exit(1)
