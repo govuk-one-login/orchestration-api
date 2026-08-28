@@ -120,7 +120,7 @@ Mappings:
       authAccountId: "653994557586"
       newauthAccountId: "975050272416"
       authEnvironment: authdev3
-      serviceDomain: authdev3.dev.account.gov.uk
+      serviceDomain: dev.account.gov.uk
       idTokenKeyRsaArn: arn:aws:kms:eu-west-2:653994557586:key/17e5e566-4e99-43b4-ad59-e1ef924a582b
       backchannelLogoutQueueArn: arn:aws:sqs:eu-west-2:653994557586:authdev3-back-channel-logout-queue
       docAppBackendUri: https://dcmaw-cri.build.stubs.account.gov.uk
