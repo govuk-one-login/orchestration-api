@@ -14,7 +14,6 @@ on:
       - "**/README.md"
       - "integration-tests/**"
       - "delivery-receipts-integration-tests/**"
-      - "local-running/**"
       - "notifications/**"
       - "quality-gate.manifest.json"
       - "frontend-api/**"
