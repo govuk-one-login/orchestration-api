@@ -1,4 +1,0 @@
-plugin: openapi
-specFile: ../openapi_v3_unreleased.yaml
-response:
-  scriptFile: respond-with-examples-from-spec.groovy
