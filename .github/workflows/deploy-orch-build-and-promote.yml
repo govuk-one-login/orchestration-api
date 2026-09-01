@@ -16,7 +16,6 @@ on:
       - "delivery-receipts-integration-tests/**"
       - "notifications/**"
       - "quality-gate.manifest.json"
-      - "frontend-api/**"
       - "account-data-api/**"
       - "account-data-api-integration-tests/**"
       - "test-services-api/**"
