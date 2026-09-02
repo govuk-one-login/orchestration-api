@@ -96,4 +96,14 @@ public class IdentityCallbackHelper {
                 ipvCoreIdentityString,
                 spotQueuedAt);
     }
+
+    public APIGatewayProxyResponseEvent redirectToFrontendErrorPageWithErrorLog(Throwable error) {
+        return RedirectService.redirectToFrontendErrorPageWithErrorLog(frontend.errorURI(), error);
+    }
+
+    public APIGatewayProxyResponseEvent redirectToFrontendErrorPageForNoSession(
+            Exception exception) {
+        return RedirectService.redirectToFrontendErrorPageForNoSession(
+                frontend.sessionEndedURI(), exception);
+    }
 }
