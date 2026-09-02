@@ -55,15 +55,12 @@ public class AuthJwksHandler
     public APIGatewayProxyResponseEvent ipvJwksRequestHandler() {
         try {
             attachTraceId();
-            LOG.info("AuthJwks request received");
 
             List<JWK> signingKeys = new ArrayList<>();
 
             signingKeys.add(jwksService.getPublicAuthSigningJwkWithOpaqueId());
 
             JWKSet jwkSet = new JWKSet(signingKeys);
-
-            LOG.info("Generating AuthJwks successful response");
 
             return generateApiGatewayProxyResponse(
                     200,
