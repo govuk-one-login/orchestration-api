@@ -61,7 +61,6 @@ import static uk.gov.di.orchestration.shared.entity.ValidClaims.RETURN_CODE;
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
 import static uk.gov.di.orchestration.shared.helpers.AuditHelper.attachTxmaAuditFieldFromHeaders;
 import static uk.gov.di.orchestration.shared.helpers.ClientSubjectHelper.getSectorIdentifierForClient;
-import static uk.gov.di.orchestration.shared.helpers.InstrumentationHelper.segmentedFunctionCall;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.AWS_REQUEST_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.CLIENT_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachIpAddressAndUserAgentToLogs;
@@ -284,12 +283,9 @@ public class SISCallbackHandler
             AuditContext auditContext,
             TxmaAuditUser user) {
         var validationErrorOpt =
-                segmentedFunctionCall(
-                        "validateSISAuthResponse",
-                        () ->
-                                sisAuthorisationService.validateCallback(
-                                        input.getQueryStringParameters(),
-                                        identityContext.orchSessionItem().getSessionId()));
+                sisAuthorisationService.validateCallback(
+                        input.getQueryStringParameters(),
+                        identityContext.orchSessionItem().getSessionId());
 
         if (validationErrorOpt.isPresent()) {
             auditService.submitAuditEventNoPrefix(
@@ -381,16 +377,11 @@ public class SISCallbackHandler
                 if (rpRequestedReturnCode(
                         identityContext.clientRegistry(), identityContext.authRequest())) {
                     LOG.info("Generating auth code response for return code(s)");
-                    segmentedFunctionCall(
-                            "saveIdentityClaims",
-                            () ->
-                                    identityCallbackHelper.saveIdentityClaimsToDynamo(
-                                            identityContext
-                                                    .orchClientSessionItem()
-                                                    .getClientSessionId(),
-                                            rpPairwiseSubject,
-                                            userIdentityUserInfo,
-                                            null));
+                    identityCallbackHelper.saveIdentityClaimsToDynamo(
+                            identityContext.orchClientSessionItem().getClientSessionId(),
+                            rpPairwiseSubject,
+                            userIdentityUserInfo,
+                            null);
                     var authenticationResponse =
                             endOfJourneyService.generateSuccessfulAuthResponse(
                                     identityContext.authRequest(),
@@ -457,15 +448,11 @@ public class SISCallbackHandler
 
         var spotQueuedAt = NowHelper.now().toInstant().toEpochMilli();
 
-        segmentedFunctionCall(
-                "saveIdentityClaims",
-                () ->
-                        identityCallbackHelper.saveIdentityClaimsToDynamo(
-                                identityContext.orchClientSessionItem().getClientSessionId(),
-                                new Subject(
-                                        identityContext.orchClientSessionItem().getRpPairwiseId()),
-                                userIdentityUserInfo,
-                                spotQueuedAt));
+        identityCallbackHelper.saveIdentityClaimsToDynamo(
+                identityContext.orchClientSessionItem().getClientSessionId(),
+                new Subject(identityContext.orchClientSessionItem().getRpPairwiseId()),
+                userIdentityUserInfo,
+                spotQueuedAt);
     }
 
     private APIGatewayProxyResponseEvent waitForSPOT(
