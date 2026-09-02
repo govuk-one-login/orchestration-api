@@ -567,9 +567,11 @@ public class AuthorisationHandler
 
     private VectorOfTrust extractVoTFromIdTokenHint(SignedJWT idTokenHint)
             throws java.text.ParseException {
-        return VectorOfTrust.parseFromAuthRequestAttribute(
-                        extractVoTStringListFromIdTokenHint(idTokenHint))
-                .get(0);
+        var vtr =
+                VectorOfTrust.parseFromAuthRequestAttribute(
+                        extractVoTStringListFromIdTokenHint(idTokenHint));
+        VectorOfTrust.logStringifiedVtrList(vtr);
+        return vtr.get(0);
     }
 
     private List<String> extractVoTStringListFromIdTokenHint(SignedJWT idTokenHint)

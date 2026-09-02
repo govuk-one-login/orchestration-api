@@ -74,10 +74,12 @@ public class VectorOfTrust {
             return List.of(new VectorOfTrust(CredentialTrustLevel.getDefault()));
         }
         JSONArray vtrJsonArray = parseJSONArrayFromAuthRequestAttribute(vtr);
-        List<VectorOfTrust> vtrList = parseVtrSet(vtrJsonArray);
-        String vtrs = stringifyVtrList(vtrList);
+        return parseVtrSet(vtrJsonArray);
+    }
+
+    public static void logStringifiedVtrList(List<VectorOfTrust> vtr) {
+        String vtrs = stringifyVtrList(vtr);
         LOG.info("VTR list has been processed as vectorOfTrust list: [{}]", vtrs);
-        return vtrList;
     }
 
     public static VectorOfTrust getLowestVtr(List<VectorOfTrust> vtrList) {
