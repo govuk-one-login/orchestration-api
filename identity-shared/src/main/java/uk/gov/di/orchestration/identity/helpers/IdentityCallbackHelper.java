@@ -99,4 +99,10 @@ public class IdentityCallbackHelper {
         return RedirectService.redirectToFrontendErrorPageForNoSession(
                 frontend.sessionEndedURI(), exception);
     }
+
+    public APIGatewayProxyResponseEvent redirectToFrontendErrorPageWithWarnLog(
+            Exception exception) {
+        return RedirectService.redirectToFrontendErrorPageWithWarnLog(
+                frontend.errorURI(), exception);
+    }
 }
