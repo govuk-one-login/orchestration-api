@@ -62,6 +62,7 @@ Conditions:
   UseSpotStub: !Not [!Condition IpvExists]
   IsDevOrBuild:
     !Or [!Equals [dev, !Ref Environment], !Equals [build, !Ref Environment]]
+  IsDev: !Equals [dev, !Ref Environment]
   IsStagingIntOrProd:
     !Or [
       !Equals [staging, !Ref Environment],
@@ -120,7 +121,7 @@ Mappings:
       authAccountId: "653994557586"
       newauthAccountId: "975050272416"
       authEnvironment: authdev3
-      serviceDomain: authdev3.dev.account.gov.uk
+      serviceDomain: dev.account.gov.uk
       idTokenKeyRsaArn: arn:aws:kms:eu-west-2:653994557586:key/17e5e566-4e99-43b4-ad59-e1ef924a582b
       backchannelLogoutQueueArn: arn:aws:sqs:eu-west-2:653994557586:authdev3-back-channel-logout-queue
       docAppBackendUri: https://dcmaw-cri.build.stubs.account.gov.uk
@@ -1547,12 +1548,14 @@ Resources:
           ENVIRONMENT: !Sub ${Environment}
           AUTH_FRONTEND_BASE_URL: !Sub
             - https://signin.${ServiceDomain}/
-            - ServiceDomain:
-                !FindInMap [
-                  EnvironmentConfiguration,
-                  !Ref Environment,
-                  serviceDomain,
-                ]
+            - ServiceDomain: !If
+                - IsDev
+                - authdev3.dev.account.gov.uk
+                - !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
@@ -2059,12 +2062,14 @@ Resources:
                 ]
           AUTH_FRONTEND_BASE_URL: !Sub
             - https://signin.${ServiceDomain}/
-            - ServiceDomain:
-                !FindInMap [
-                  EnvironmentConfiguration,
-                  !Ref Environment,
-                  serviceDomain,
-                ]
+            - ServiceDomain: !If
+                - IsDev
+                - authdev3.dev.account.gov.uk
+                - !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
           TXMA_AUDIT_QUEUE_URL:
             Fn::ImportValue: !Sub orchestration-${Environment}-txma-QueueURL
           ENVIRONMENT: !Sub ${Environment}
@@ -2484,12 +2489,14 @@ Resources:
           BACK_CHANNEL_LOGOUT_QUEUE_URI: !GetAtt BackChannelLogoutQueue.QueueUrl
           AUTH_FRONTEND_BASE_URL: !Sub
             - https://signin.${ServiceDomain}/
-            - ServiceDomain:
-                !FindInMap [
-                  EnvironmentConfiguration,
-                  !Ref Environment,
-                  serviceDomain,
-                ]
+            - ServiceDomain: !If
+                - IsDev
+                - authdev3.dev.account.gov.uk
+                - !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
       Policies:
         - !Ref ClientRegistryTableReadAccessPolicy
         - !Ref TxmaQueueSendPermissionPolicy
@@ -3050,12 +3057,14 @@ Resources:
                   ]
             - !Sub
               - https://signin.${ServiceDomain}/
-              - ServiceDomain:
-                  !FindInMap [
-                    EnvironmentConfiguration,
-                    !Ref Environment,
-                    serviceDomain,
-                  ]
+              - ServiceDomain: !If
+                  - IsDev
+                  - authdev3.dev.account.gov.uk
+                  - !FindInMap [
+                      EnvironmentConfiguration,
+                      !Ref Environment,
+                      serviceDomain,
+                    ]
           ACCOUNT_INTERVENTION_SERVICE_ABORT_ON_ERROR:
             !If [AisAbortOnError, true, false]
           STORAGE_TOKEN_SIGNING_KEY_ALIAS: !Ref OrchStorageTokenSigningKmsKeyAlias
@@ -3950,12 +3959,14 @@ Resources:
                   ]
             - !Sub
               - https://signin.${ServiceDomain}/
-              - ServiceDomain:
-                  !FindInMap [
-                    EnvironmentConfiguration,
-                    !Ref Environment,
-                    serviceDomain,
-                  ]
+              - ServiceDomain: !If
+                  - IsDev
+                  - authdev3.dev.account.gov.uk
+                  - !FindInMap [
+                      EnvironmentConfiguration,
+                      !Ref Environment,
+                      serviceDomain,
+                    ]
           OIDC_API_BASE_URL: !Sub
             - https://oidc.${ServiceDomain}/
             - ServiceDomain:
@@ -5067,12 +5078,14 @@ Resources:
                 ]
           AUTH_FRONTEND_BASE_URL: !Sub
             - https://signin.${ServiceDomain}/
-            - ServiceDomain:
-                !FindInMap [
-                  EnvironmentConfiguration,
-                  !Ref Environment,
-                  serviceDomain,
-                ]
+            - ServiceDomain: !If
+                - IsDev
+                - authdev3.dev.account.gov.uk
+                - !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
           ACCOUNT_INTERVENTION_SERVICE_ACTION_ENABLED: true
           ACCOUNT_INTERVENTION_SERVICE_CALL_ENABLED: true
           ACCOUNT_INTERVENTIONS_ERROR_METRIC_NAME: "AISException"
@@ -5614,12 +5627,14 @@ Resources:
                 ]
           AUTH_FRONTEND_BASE_URL: !Sub
             - https://signin.${ServiceDomain}/
-            - ServiceDomain:
-                !FindInMap [
-                  EnvironmentConfiguration,
-                  !Ref Environment,
-                  serviceDomain,
-                ]
+            - ServiceDomain: !If
+                - IsDev
+                - authdev3.dev.account.gov.uk
+                - !FindInMap [
+                    EnvironmentConfiguration,
+                    !Ref Environment,
+                    serviceDomain,
+                  ]
           TXMA_AUDIT_QUEUE_URL:
             Fn::ImportValue: !Sub orchestration-${Environment}-txma-QueueURL
           INTERNAl_SECTOR_URI: !Sub
