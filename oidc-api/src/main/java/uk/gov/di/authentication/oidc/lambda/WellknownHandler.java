@@ -76,7 +76,6 @@ public class WellknownHandler
 
     public APIGatewayProxyResponseEvent wellknownRequestHandler(
             APIGatewayProxyRequestEvent input, Context context) {
-        LOG.info("Wellknown request received");
         return generateApiGatewayProxyResponse(
                 200, providerMetadata, Map.of("Cache-Control", "max-age=86400"), null);
     }

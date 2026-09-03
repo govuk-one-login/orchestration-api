@@ -85,11 +85,6 @@ public class SPOTResponseHandler implements RequestHandler<SQSEvent, Object> {
                                 .withSessionId(logIds.getSessionId())
                                 .withPersistentSessionId(logIds.getPersistentSessionId());
 
-                LOG.info(
-                        "is clientSessionId defined: {}",
-                        logIds.getClientSessionId() != null
-                                && !logIds.getClientSessionId().isBlank());
-
                 logMessageMetadata(msg);
 
                 if (spotResponse.getStatus().equals(SPOTStatus.ACCEPTED)) {
