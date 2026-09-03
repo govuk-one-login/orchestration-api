@@ -24,8 +24,6 @@ include 'user-permissions'
 include 'deprecation-checker'
 include 'orchestration-local-running'
 include 'audit-events'
-include 'account-data-api'
-include 'account-data-api-integration-tests'
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
