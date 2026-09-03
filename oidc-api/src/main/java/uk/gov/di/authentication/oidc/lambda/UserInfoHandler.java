@@ -40,7 +40,6 @@ import static uk.gov.di.orchestration.shared.domain.CloudwatchMetrics.USER_INFO_
 import static uk.gov.di.orchestration.shared.domain.RequestHeaders.AUTHORIZATION_HEADER;
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyErrorResponse;
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
-import static uk.gov.di.orchestration.shared.helpers.InstrumentationHelper.segmentedFunctionCall;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.AWS_REQUEST_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.CLIENT_SESSION_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.GOVUK_SIGNIN_JOURNEY_ID;
@@ -108,13 +107,7 @@ public class UserInfoHandler
         attachTraceId();
         attachIpAddressAndUserAgentToLogs(input);
         attachLogFieldToLogs(AWS_REQUEST_ID, context.getAwsRequestId());
-        return segmentedFunctionCall(
-                "oidc-api::" + getClass().getSimpleName(),
-                () -> userInfoRequestHandler(input, context));
-    }
 
-    public APIGatewayProxyResponseEvent userInfoRequestHandler(
-            APIGatewayProxyRequestEvent input, Context context) {
         LOG.info("Request received to the UserInfoHandler");
         if (!headersContainValidHeader(
                 input.getHeaders(),

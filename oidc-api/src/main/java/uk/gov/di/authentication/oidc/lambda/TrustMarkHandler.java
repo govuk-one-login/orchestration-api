@@ -16,7 +16,6 @@ import uk.gov.di.orchestration.shared.services.ConfigurationService;
 
 import java.util.Arrays;
 
-import static uk.gov.di.orchestration.shared.helpers.InstrumentationHelper.segmentedFunctionCall;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.AWS_REQUEST_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachIpAddressAndUserAgentToLogs;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachLogFieldToLogs;
@@ -46,11 +45,6 @@ public class TrustMarkHandler
         attachIpAddressAndUserAgentToLogs(input);
         attachLogFieldToLogs(AWS_REQUEST_ID, context.getAwsRequestId());
 
-        return segmentedFunctionCall(
-                "oidc-api::" + getClass().getSimpleName(), this::trustmarkRequestHandler);
-    }
-
-    public APIGatewayProxyResponseEvent trustmarkRequestHandler() {
         return ApiResponse.ok(createTrustMarkResponse());
     }
 
