@@ -17,8 +17,6 @@ on:
       - "notifications/**"
       - "quality-gate.manifest.json"
       - "frontend-api/**"
-      - "account-management-api/**"
-      - "account-management-integration-tests/**"
       - "account-data-api/**"
       - "account-data-api-integration-tests/**"
       - "test-services-api/**"
