@@ -76,7 +76,8 @@ public class QueryParamsAuthorizeValidator extends BaseAuthorizeValidator {
                     new AuthRequestError(
                             OAuth2Error.REQUEST_URI_NOT_SUPPORTED, redirectURI, state));
         }
-        if (!authRequest.getResponseType().toString().equals(ResponseType.CODE.toString())) {
+        if ((authRequest.getResponseType() == null)
+                || !authRequest.getResponseType().toString().equals(ResponseType.CODE.toString())) {
             logErrorInProdElseWarn(
                     "Unsupported responseType included in request. Expected responseType of code");
             return Optional.of(
