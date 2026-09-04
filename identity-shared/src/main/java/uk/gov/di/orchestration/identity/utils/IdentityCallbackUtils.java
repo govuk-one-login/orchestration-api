@@ -76,9 +76,18 @@ public class IdentityCallbackUtils {
     public static Optional<ErrorObject> validateUserIdentityResponse(
             UserInfo userIdentityUserInfo,
             List<LevelOfConfidence> requestedLoCs,
-            String trustmarkURL)
+            String trustmarkURL,
+            String expectedSubject)
             throws IdentityCallbackException {
         LOG.info("Validating userinfo response");
+
+        var responseSubject = userIdentityUserInfo.getSubject().getValue();
+        if (!responseSubject.equals(expectedSubject)) {
+            LOG.warn("Identity response subject does not match session subject");
+            throw new IdentityCallbackException(
+                    "Sub in identity response does not match session subject");
+        }
+
         for (LevelOfConfidence loc : requestedLoCs) {
             if (loc.getValue().equals(userIdentityUserInfo.getClaim(VOT.getValue()))) {
 

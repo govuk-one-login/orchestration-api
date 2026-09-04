@@ -389,7 +389,7 @@ class IPVCallbackHandlerTest {
                     new HashMap<String, Object>(
                             Map.of(
                                     "sub",
-                                    "sub-val",
+                                    TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
                                     "vot",
                                     "P2",
                                     "vtm",
@@ -426,9 +426,12 @@ class IPVCallbackHandlerTest {
                     new UserInfo(
                             new JSONObject(
                                     Map.of(
-                                            "sub", "sub-val",
-                                            "vot", "P2",
-                                            "vtm", OIDC_BASE_URL + "/invalid-trustmark")));
+                                            "sub",
+                                            TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
+                                            "vot",
+                                            "P2",
+                                            "vtm",
+                                            OIDC_BASE_URL + "/invalid-trustmark")));
             doThrow(new IpvCallbackException("IPV trustmark is invalid"))
                     .when(ipvCallbackHelper)
                     .validateUserIdentityResponse(userIdentityUserInfo, VTR_LIST);
@@ -515,6 +518,33 @@ class IPVCallbackHandlerTest {
             verifyNoInteractions(auditService);
             verifyNoInteractions(dynamoIdentityService);
         }
+
+        @Test
+        void shouldRedirectToFrontendErrorPageWhenIdentityResponseSubjectDoesNotMatchSession()
+                throws UnsuccessfulCredentialResponseException, ParseException {
+            usingValidSession();
+            usingValidClientSession();
+            usingValidAuthUserInfo();
+
+            var userIdentityUserInfo =
+                    new UserInfo(
+                            new JSONObject(
+                                    Map.of(
+                                            "sub", "different-subject-value",
+                                            "vot", "P2",
+                                            "vtm", OIDC_BASE_URL + "/trustmark")));
+
+            var request = getApiGatewayProxyRequestEvent(userIdentityUserInfo, clientRegistry);
+
+            var response = handler.handleRequest(request, context);
+            assertDoesRedirectToFrontendPage(response, FRONT_END_ERROR_URI);
+
+            verifyAuditEvent(IPVAuditableEvent.IPV_AUTHORISATION_RESPONSE_RECEIVED);
+            verifyAuditEvent(IPVAuditableEvent.IPV_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED);
+            verifyAuditEvent(IPVAuditableEvent.IPV_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+            verifyNoMoreInteractions(auditService);
+            verifyNoInteractions(dynamoIdentityService);
+        }
     }
 
     @Nested
@@ -532,9 +562,12 @@ class IPVCallbackHandlerTest {
                     new UserInfo(
                             new JSONObject(
                                     Map.of(
-                                            "sub", "sub-val",
-                                            "vot", "P0",
-                                            "vtm", OIDC_BASE_URL + "/trustmark")));
+                                            "sub",
+                                            TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
+                                            "vot",
+                                            "P0",
+                                            "vtm",
+                                            OIDC_BASE_URL + "/trustmark")));
 
             when(ipvCallbackHelper.validateUserIdentityResponse(any(UserInfo.class), eq(VTR_LIST)))
                     .thenReturn(Optional.of(OAuth2Error.ACCESS_DENIED));
@@ -580,7 +613,7 @@ class IPVCallbackHandlerTest {
                             new JSONObject(
                                     Map.of(
                                             "sub",
-                                            "sub-val",
+                                            TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
                                             "vot",
                                             "P0",
                                             "vtm",
@@ -880,7 +913,10 @@ class IPVCallbackHandlerTest {
         @ParameterizedTest
         @MethodSource("blockedOrSuspended")
         void shouldRedirectToFrontendAndLogoutWhenAISReturnsBlockedOrSuspendedAccountInTokenStep(
-                AccountIntervention intervention) throws IpvCallbackException, ParseException {
+                AccountIntervention intervention)
+                throws IpvCallbackException,
+                        ParseException,
+                        UnsuccessfulCredentialResponseException {
             var clientRegistry = generateClientRegistryNoClaims();
             usingValidSession();
             usingValidClientSession();
@@ -899,6 +935,15 @@ class IPVCallbackHandlerTest {
                     new AccessTokenResponse(new Tokens(new BearerAccessToken(), null));
             when(ipvTokenService.getToken(AUTH_CODE.getValue()))
                     .thenReturn(successfulTokenResponse);
+            when(ipvTokenService.sendIpvUserIdentityRequest(any()))
+                    .thenReturn(
+                            new UserInfo(
+                                    new JSONObject(
+                                            Map.of(
+                                                    "sub",
+                                                    TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
+                                                    "vot",
+                                                    "P0"))));
             when(accountInterventionService.getAccountIntervention(anyString(), any()))
                     .thenReturn(intervention);
 
@@ -992,7 +1037,7 @@ class IPVCallbackHandlerTest {
                     new HashMap<String, Object>(
                             Map.of(
                                     "sub",
-                                    "sub-val",
+                                    TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
                                     "vot",
                                     "P2",
                                     "vtm",
@@ -1106,7 +1151,7 @@ class IPVCallbackHandlerTest {
                     new HashMap<>(
                             Map.of(
                                     "sub",
-                                    "sub-val",
+                                    TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
                                     "vot",
                                     "P2",
                                     "vtm",
@@ -1263,7 +1308,7 @@ class IPVCallbackHandlerTest {
                         new JSONObject(
                                 Map.of(
                                         "sub",
-                                        "sub-val",
+                                        TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
                                         "vot",
                                         "P0",
                                         "vtm",
@@ -1358,7 +1403,7 @@ class IPVCallbackHandlerTest {
                 new HashMap<String, Object>(
                         Map.of(
                                 "sub",
-                                "sub-val",
+                                TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
                                 "vot",
                                 "P2",
                                 "vtm",

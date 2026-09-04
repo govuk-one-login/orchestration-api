@@ -128,7 +128,10 @@ class IdentityCallbackUtilsTest {
 
             var result =
                     validateUserIdentityResponse(
-                            userInfo, List.of(LevelOfConfidence.NONE), TRUSTMARK_URL);
+                            userInfo,
+                            List.of(LevelOfConfidence.NONE),
+                            TRUSTMARK_URL,
+                            SUBJECT.getValue());
 
             assertTrue(result.isPresent());
             assertThat(result.get(), equalTo(ACCESS_DENIED));
@@ -146,7 +149,8 @@ class IdentityCallbackUtilsTest {
                             validateUserIdentityResponse(
                                     userInfo,
                                     List.of(LevelOfConfidence.MEDIUM_LEVEL),
-                                    TRUSTMARK_URL));
+                                    TRUSTMARK_URL,
+                                    SUBJECT.getValue()));
         }
 
         @Test
@@ -158,9 +162,28 @@ class IdentityCallbackUtilsTest {
 
             var result =
                     validateUserIdentityResponse(
-                            userInfo, List.of(LevelOfConfidence.MEDIUM_LEVEL), TRUSTMARK_URL);
+                            userInfo,
+                            List.of(LevelOfConfidence.MEDIUM_LEVEL),
+                            TRUSTMARK_URL,
+                            SUBJECT.getValue());
 
             assertTrue(result.isEmpty());
+        }
+
+        @Test
+        void shouldThrowExceptionWhenSubjectDoesNotMatchExpectedSubject() {
+            var userInfo = new UserInfo(SUBJECT);
+            userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
+            userInfo.setClaim("vtm", TRUSTMARK_URL);
+
+            assertThrows(
+                    IdentityCallbackException.class,
+                    () ->
+                            validateUserIdentityResponse(
+                                    userInfo,
+                                    List.of(LevelOfConfidence.MEDIUM_LEVEL),
+                                    TRUSTMARK_URL,
+                                    "different-subject"));
         }
     }
 

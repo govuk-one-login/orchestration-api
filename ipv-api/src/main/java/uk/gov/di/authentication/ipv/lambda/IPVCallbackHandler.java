@@ -357,6 +357,15 @@ public class IPVCallbackHandler
 
             auditService.submitAuditEvent(
                     IPVAuditableEvent.IPV_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED, clientId, user);
+
+            var expectedSubject = orchSession.getInternalCommonSubjectId();
+            var responseSubject = userIdentityUserInfo.getSubject().getValue();
+            if (!responseSubject.equals(expectedSubject)) {
+                LOG.warn("IPV identity response subject does not match session subject");
+                throw new UnsuccessfulCredentialResponseException(
+                        "Sub in IPV identity response does not match session subject");
+            }
+
             var vtrList = orchClientSession.getVtrList();
             var userIdentityError =
                     ipvCallbackHelper.validateUserIdentityResponse(userIdentityUserInfo, vtrList);
