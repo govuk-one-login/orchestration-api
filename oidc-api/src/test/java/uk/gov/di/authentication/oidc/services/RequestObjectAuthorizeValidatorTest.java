@@ -438,6 +438,23 @@ class RequestObjectAuthorizeValidatorTest {
             assertThat(requestObjectError.get().redirectURI().toString(), equalTo(REDIRECT_URI));
             assertEquals(STATE, requestObjectError.get().state());
         }
+
+        @Test
+        void validatorReturnsErrorObjectWhenResponseTypeIsNull() throws Exception {
+            var jwtClaimsSet = getDefaultJWTClaimsSetBuilder().build();
+            var authRequest =
+                    new AuthenticationRequest.Builder(
+                                    generateSignedJWT(jwtClaimsSet, keyPair), CLIENT_ID)
+                            .build();
+            var requestObjectError = validator.validate(authRequest);
+
+            assertTrue(requestObjectError.isPresent());
+            assertThat(
+                    requestObjectError.get().errorObject(),
+                    equalTo(OAuth2Error.UNSUPPORTED_RESPONSE_TYPE));
+            assertThat(requestObjectError.get().redirectURI().toString(), equalTo(REDIRECT_URI));
+            assertEquals(STATE, requestObjectError.get().state());
+        }
     }
 
     @Nested
