@@ -5,9 +5,13 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.nimbusds.oauth2.sdk.ErrorObject;
+import com.nimbusds.oauth2.sdk.OAuth2Error;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.TokenResponse;
+import com.nimbusds.oauth2.sdk.id.Subject;
+import com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -20,8 +24,11 @@ import uk.gov.di.orchestration.identity.entity.IdentityContext;
 import uk.gov.di.orchestration.identity.exceptions.IdentityCallbackException;
 import uk.gov.di.orchestration.identity.helpers.IdentityCallbackHelper;
 import uk.gov.di.orchestration.identity.service.IdentityContextService;
+import uk.gov.di.orchestration.shared.entity.ClientRegistry;
+import uk.gov.di.orchestration.shared.entity.ResponseHeaders;
 import uk.gov.di.orchestration.shared.entity.VectorOfTrust;
 import uk.gov.di.orchestration.shared.exceptions.NoSessionException;
+import uk.gov.di.orchestration.shared.exceptions.UnsuccessfulCredentialResponseException;
 import uk.gov.di.orchestration.shared.helpers.IpAddressHelper;
 import uk.gov.di.orchestration.shared.helpers.PersistentIdHelper;
 import uk.gov.di.orchestration.shared.oauth.OAuthService;
@@ -30,18 +37,24 @@ import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.EndOfJourneyService;
 import uk.gov.di.orchestration.sis.exception.SISCallbackValidationError;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.nimbusds.oauth2.sdk.OAuth2Error.ACCESS_DENIED_CODE;
 import static java.lang.String.format;
+import static uk.gov.di.orchestration.shared.entity.ValidClaims.RETURN_CODE;
+import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
 import static uk.gov.di.orchestration.shared.helpers.AuditHelper.attachTxmaAuditFieldFromHeaders;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.AWS_REQUEST_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.CLIENT_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachIpAddressAndUserAgentToLogs;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachLogFieldToLogs;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachTraceId;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.AUTH_AUTH_CODE_ISSUED;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_UNSUCCESSFUL_TOKEN_RESPONSE_RECEIVED;
@@ -140,8 +153,19 @@ public class SISCallbackHandler
 
             var authCode = input.getQueryStringParameters().get("code");
             var tokenResponse = makeTokenRequest(authCode, clientId, user);
-            auditService.submitAuditEvent(
+            auditService.submitAuditEventNoPrefix(
                     ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED, clientId, user);
+
+            var userIdentityUserInfo = sisAuthorisationService.getUserInfo(tokenResponse);
+            auditService.submitAuditEventNoPrefix(
+                    ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED, clientId, user);
+
+            var redirect =
+                    validateUserIdentityResponse(
+                            userIdentityUserInfo, identityContext, auditContext, user);
+            if (redirect.isPresent()) {
+                return redirect.get();
+            }
         } catch (IdentityCallbackException e) {
             return identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(e);
         } catch (NoSessionException e) {
@@ -149,6 +173,8 @@ public class SISCallbackHandler
         } catch (ParseException e) {
             return identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(
                     new Error("Cannot retrieve auth request params from client session id"));
+        } catch (UnsuccessfulCredentialResponseException e) {
+            return identityCallbackHelper.redirectToFrontendErrorPageWithWarnLog(e);
         }
         return null;
     }
@@ -242,6 +268,102 @@ public class SISCallbackHandler
                     endOfJourneyService.generateAuthenticationErrorResponse(
                             identityContext.authRequest(),
                             new ErrorObject(ACCESS_DENIED_CODE, validationError.description())));
+        }
+        return Optional.empty();
+    }
+
+    private static boolean returnCodePresentInIdentityResponse(Object returnCode) {
+        return returnCode instanceof List<?> returnCodeList && !returnCodeList.isEmpty();
+    }
+
+    private static boolean rpRequestedReturnCode(
+            ClientRegistry clientRegistry, AuthenticationRequest authRequest) {
+        if (authRequest.getOIDCClaims() == null
+                || authRequest.getOIDCClaims().getUserInfoClaimsRequest() == null) {
+            return false;
+        }
+        return clientRegistry.getClaims().contains(RETURN_CODE.getValue())
+                && authRequest
+                                .getOIDCClaims()
+                                .getUserInfoClaimsRequest()
+                                .get(RETURN_CODE.getValue())
+                        != null;
+    }
+
+    private Optional<APIGatewayProxyResponseEvent> validateUserIdentityResponse(
+            UserInfo userIdentityUserInfo,
+            IdentityContext identityContext,
+            AuditContext auditContext,
+            TxmaAuditUser user)
+            throws IdentityCallbackException {
+        var locList =
+                identityContext.orchClientSessionItem().getVtrList().stream()
+                        .map(VectorOfTrust::getLevelOfConfidence)
+                        .filter(Objects::nonNull)
+                        .toList();
+        var rpPairwiseSubject =
+                new Subject(identityContext.orchClientSessionItem().getRpPairwiseId());
+        var userIdentityError =
+                identityCallbackHelper.validateUserIdentityResponse(userIdentityUserInfo, locList);
+        if (userIdentityError.isPresent()) {
+            var aisResponseOpt =
+                    endOfJourneyService.getAndCheckForIntervention(
+                            identityContext.orchSessionItem(),
+                            auditContext,
+                            user,
+                            identityContext.clientRegistry().getClientID(),
+                            false);
+            if (aisResponseOpt.isPresent()) {
+                return aisResponseOpt;
+            }
+            var error = userIdentityError.get();
+            var returnCode = userIdentityUserInfo.getClaim(RETURN_CODE.getValue());
+            if (returnCodePresentInIdentityResponse(returnCode)) {
+                if (rpRequestedReturnCode(
+                        identityContext.clientRegistry(), identityContext.authRequest())) {
+                    LOG.info("Generating auth code response for return code(s)");
+                    identityCallbackHelper.saveIdentityClaimsToDynamo(
+                            identityContext.orchClientSessionItem().getClientSessionId(),
+                            rpPairwiseSubject,
+                            userIdentityUserInfo,
+                            null);
+                    var authenticationResponse =
+                            endOfJourneyService.generateSuccessfulAuthResponse(
+                                    identityContext.authRequest(),
+                                    identityContext.clientRegistry().getClientID(),
+                                    identityContext.orchClientSessionItem().getClientSessionId(),
+                                    identityContext.authUserInfo().getEmailAddress(),
+                                    identityContext.orchSessionItem());
+                    auditService.submitAuditEventNoPrefix(
+                            AUTH_AUTH_CODE_ISSUED,
+                            identityContext.clientRegistry().getClientID(),
+                            user);
+                    // TODO: send cloudwatch metrics for sis journey completed
+                    return Optional.ofNullable(
+                            generateApiGatewayProxyResponse(
+                                    302,
+                                    "",
+                                    Map.of(
+                                            ResponseHeaders.LOCATION,
+                                            authenticationResponse.toURI().toString()),
+                                    null));
+                } else {
+                    error = OAuth2Error.ACCESS_DENIED;
+                }
+            }
+            LOG.warn("SPOT will not be invoked. Returning Error to RP");
+            var errorResponse =
+                    new AuthenticationErrorResponse(
+                            identityContext.authRequest().getRedirectionURI(),
+                            error,
+                            identityContext.authRequest().getState(),
+                            identityContext.authRequest().getResponseMode());
+            return Optional.ofNullable(
+                    generateApiGatewayProxyResponse(
+                            302,
+                            "",
+                            Map.of(ResponseHeaders.LOCATION, errorResponse.toURI().toString()),
+                            null));
         }
         return Optional.empty();
     }
