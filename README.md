@@ -66,7 +66,7 @@ Each of these directories corresponds to separate modules with some shared code.
 To run all the unit tests in the project you can run the following command:
 
 ```shell
-./gradlew --parallel test -x integration-tests:test -x account-management-integration-tests:test -x delivery-receipts-integration-tests:test
+./gradlew --parallel test -x integration-tests:test -x delivery-receipts-integration-tests:test
 ```
 
 However, it may be useful to run the tests in a specific module in the codebase. For example the following command runs the tests in `oidc-api`:
