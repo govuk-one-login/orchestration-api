@@ -138,7 +138,11 @@ public class IPVCallbackHelper {
             throws IpvCallbackException {
         LOG.info("Validating userinfo response");
 
-        checkSubject(internalCommonSubjectId, userIdentityUserInfo);
+        if (!internalCommonSubjectId.equals(userIdentityUserInfo.getSubject().getValue())) {
+            LOG.warn("Mismatch in identity subject claim");
+            throw new IpvCallbackException(
+                    "Subject (sub) claim in identity information does not match session");
+        }
 
         for (VectorOfTrust vtr : vtrList) {
             if (vtr.getLevelOfConfidence()
@@ -155,16 +159,6 @@ public class IPVCallbackHelper {
         }
         LOG.warn("IPV missing vot or vot not in vtr list.");
         return Optional.of(OAuth2Error.ACCESS_DENIED);
-    }
-
-    private void checkSubject(String internalCommonSubjectId, UserInfo userIdentityUserInfo) {
-        try {
-            if (!internalCommonSubjectId.equals(userIdentityUserInfo.getSubject().getValue())) {
-                LOG.warn("Mismatch in identity subject claim");
-            }
-        } catch (Exception e) {
-            LOG.warn("Unexpected exception when checking subject claims: {}", e.getMessage());
-        }
     }
 
     public AuthenticationSuccessResponse generateReturnCodeAuthenticationResponse(
