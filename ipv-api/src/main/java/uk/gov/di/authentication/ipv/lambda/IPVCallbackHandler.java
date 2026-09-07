@@ -359,7 +359,10 @@ public class IPVCallbackHandler
                     IPVAuditableEvent.IPV_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED, clientId, user);
             var vtrList = orchClientSession.getVtrList();
             var userIdentityError =
-                    ipvCallbackHelper.validateUserIdentityResponse(userIdentityUserInfo, vtrList);
+                    ipvCallbackHelper.validateUserIdentityResponse(
+                            userIdentityUserInfo,
+                            vtrList,
+                            orchSession.getInternalCommonSubjectId());
             if (userIdentityError.isPresent()) {
                 var aisResponseOpt =
                         checkForAisIntervention(orchSession, auditContext, input, clientId);

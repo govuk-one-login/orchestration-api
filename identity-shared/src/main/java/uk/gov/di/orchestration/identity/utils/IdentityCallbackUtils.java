@@ -76,9 +76,13 @@ public class IdentityCallbackUtils {
     public static Optional<ErrorObject> validateUserIdentityResponse(
             UserInfo userIdentityUserInfo,
             List<LevelOfConfidence> requestedLoCs,
-            String trustmarkURL)
+            String trustmarkURL,
+            String internalCommonSubjectId)
             throws IdentityCallbackException {
         LOG.info("Validating userinfo response");
+
+        checkSubject(internalCommonSubjectId, userIdentityUserInfo);
+
         for (LevelOfConfidence loc : requestedLoCs) {
             if (loc.getValue().equals(userIdentityUserInfo.getClaim(VOT.getValue()))) {
 
@@ -91,5 +95,16 @@ public class IdentityCallbackUtils {
         }
         LOG.warn("User identity response missing vot or vot not in vtr list.");
         return Optional.of(OAuth2Error.ACCESS_DENIED);
+    }
+
+    private static void checkSubject(
+            String internalCommonSubjectId, UserInfo userIdentityUserInfo) {
+        try {
+            if (!internalCommonSubjectId.equals(userIdentityUserInfo.getSubject().getValue())) {
+                LOG.warn("Mismatch in identity subject claim");
+            }
+        } catch (Exception e) {
+            LOG.warn("Unexpected exception when checking subject claims: {}", e.getMessage());
+        }
     }
 }

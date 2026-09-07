@@ -426,12 +426,18 @@ class IPVCallbackHandlerTest {
                     new UserInfo(
                             new JSONObject(
                                     Map.of(
-                                            "sub", "sub-val",
-                                            "vot", "P2",
-                                            "vtm", OIDC_BASE_URL + "/invalid-trustmark")));
+                                            "sub",
+                                            TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
+                                            "vot",
+                                            "P2",
+                                            "vtm",
+                                            OIDC_BASE_URL + "/invalid-trustmark")));
             doThrow(new IpvCallbackException("IPV trustmark is invalid"))
                     .when(ipvCallbackHelper)
-                    .validateUserIdentityResponse(userIdentityUserInfo, VTR_LIST);
+                    .validateUserIdentityResponse(
+                            userIdentityUserInfo,
+                            VTR_LIST,
+                            TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER);
 
             var request = getApiGatewayProxyRequestEvent(userIdentityUserInfo, clientRegistry);
 
@@ -532,11 +538,17 @@ class IPVCallbackHandlerTest {
                     new UserInfo(
                             new JSONObject(
                                     Map.of(
-                                            "sub", "sub-val",
-                                            "vot", "P0",
-                                            "vtm", OIDC_BASE_URL + "/trustmark")));
+                                            "sub",
+                                            TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
+                                            "vot",
+                                            "P0",
+                                            "vtm",
+                                            OIDC_BASE_URL + "/trustmark")));
 
-            when(ipvCallbackHelper.validateUserIdentityResponse(any(UserInfo.class), eq(VTR_LIST)))
+            when(ipvCallbackHelper.validateUserIdentityResponse(
+                            any(UserInfo.class),
+                            eq(VTR_LIST),
+                            eq(TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER)))
                     .thenReturn(Optional.of(OAuth2Error.ACCESS_DENIED));
             when(configService.isAccountInterventionServiceActionEnabled()).thenReturn(false);
 
@@ -580,14 +592,17 @@ class IPVCallbackHandlerTest {
                             new JSONObject(
                                     Map.of(
                                             "sub",
-                                            "sub-val",
+                                            TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
                                             "vot",
                                             "P0",
                                             "vtm",
                                             OIDC_BASE_URL + "/trustmark",
                                             "https://vocab.account.gov.uk/v1/returnCode",
                                             List.of(Map.of("code", "A")))));
-            when(ipvCallbackHelper.validateUserIdentityResponse(userIdentityUserInfo, VTR_LIST))
+            when(ipvCallbackHelper.validateUserIdentityResponse(
+                            userIdentityUserInfo,
+                            VTR_LIST,
+                            TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER))
                     .thenReturn(Optional.of(OAuth2Error.ACCESS_DENIED));
             when(ipvCallbackHelper.generateReturnCodeAuthenticationResponse(
                             any(AuthenticationRequest.class),
@@ -886,7 +901,8 @@ class IPVCallbackHandlerTest {
             usingValidClientSession();
             usingValidAuthUserInfo();
 
-            when(ipvCallbackHelper.validateUserIdentityResponse(any(), eq(VTR_LIST)))
+            when(ipvCallbackHelper.validateUserIdentityResponse(
+                            any(), eq(VTR_LIST), eq(TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER)))
                     .thenReturn(Optional.of(OAuth2Error.ACCESS_DENIED));
             Map<String, String> responseHeaders = new HashMap<>();
             responseHeaders.put("code", AUTH_CODE.getValue());
@@ -1263,7 +1279,7 @@ class IPVCallbackHandlerTest {
                         new JSONObject(
                                 Map.of(
                                         "sub",
-                                        "sub-val",
+                                        TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER,
                                         "vot",
                                         "P0",
                                         "vtm",
@@ -1304,7 +1320,8 @@ class IPVCallbackHandlerTest {
                                         .withRpPairwiseId(TEST_RP_PAIRWISE_ID)));
 
         when(responseService.validateResponse(anyMap(), anyString())).thenReturn(Optional.empty());
-        when(ipvCallbackHelper.validateUserIdentityResponse(userIdentityUserInfo, vtrList))
+        when(ipvCallbackHelper.validateUserIdentityResponse(
+                        userIdentityUserInfo, vtrList, TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER))
                 .thenReturn(Optional.of(OAuth2Error.ACCESS_DENIED));
         when(ipvCallbackHelper.generateReturnCodeAuthenticationResponse(
                         any(AuthenticationRequest.class),
