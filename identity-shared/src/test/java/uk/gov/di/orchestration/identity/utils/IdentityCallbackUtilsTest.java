@@ -24,13 +24,12 @@ import java.util.List;
 import static com.nimbusds.oauth2.sdk.OAuth2Error.ACCESS_DENIED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.orchestration.identity.utils.IdentityCallbackUtils.validateUserIdentityResponse;
-import static uk.gov.di.orchestration.sharedtest.logging.LogEventMatcher.withMessageContaining;
 
 class IdentityCallbackUtilsTest {
 
@@ -162,19 +161,23 @@ class IdentityCallbackUtilsTest {
         }
 
         @Test
-        void shouldLogAWarnForSubMismatch() throws IdentityCallbackException {
+        void shouldThrowExceptionForSubMismatch() {
             var userInfo = new UserInfo(new Subject("a-different-subject-claim"));
             userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
             userInfo.setClaim("vtm", TRUSTMARK_URL);
+            var exception =
+                    assertThrows(
+                            IdentityCallbackException.class,
+                            () ->
+                                    validateUserIdentityResponse(
+                                            userInfo,
+                                            List.of(LevelOfConfidence.MEDIUM_LEVEL),
+                                            TRUSTMARK_URL,
+                                            TEST_INTERNAL_COMMON_SUBJECT_ID.getValue()));
 
-            validateUserIdentityResponse(
-                    userInfo,
-                    List.of(LevelOfConfidence.MEDIUM_LEVEL),
-                    TRUSTMARK_URL,
-                    TEST_INTERNAL_COMMON_SUBJECT_ID.getValue());
-            assertThat(
-                    logging.events(),
-                    hasItem(withMessageContaining("Mismatch in identity subject claim")));
+            assertEquals(
+                    "Subject (sub) claim in identity information does not match session",
+                    exception.getMessage());
         }
 
         @Test

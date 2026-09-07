@@ -153,9 +153,12 @@ class IPVCallbackHelperTest {
             new UserInfo(
                     new JSONObject(
                             Map.of(
-                                    "sub", "sub-val",
-                                    "vot", "P0",
-                                    "vtm", OIDC_TRUSTMARK_URI.toString())));
+                                    "sub",
+                                    TEST_INTERNAL_COMMON_SUBJECT_ID,
+                                    "vot",
+                                    "P0",
+                                    "vtm",
+                                    OIDC_TRUSTMARK_URI.toString())));
 
     private static final UserInfo p1VotUserIdentityUserInfo =
             new UserInfo(
@@ -281,7 +284,11 @@ class IPVCallbackHelperTest {
         var missingVotUserIdentityUserInfo =
                 new UserInfo(
                         new JSONObject(
-                                Map.of("sub", "sub-val", "vtm", OIDC_TRUSTMARK_URI.toString())));
+                                Map.of(
+                                        "sub",
+                                        TEST_INTERNAL_COMMON_SUBJECT_ID,
+                                        "vtm",
+                                        OIDC_TRUSTMARK_URI.toString())));
 
         var response =
                 helper.validateUserIdentityResponse(
@@ -337,7 +344,7 @@ class IPVCallbackHelperTest {
     }
 
     @Test
-    void shouldLogWarnIfSubjectClaimsDoNotMAtch() throws IpvCallbackException {
+    void shouldLogWarnIfSubjectClaimsDoNotMatch() {
         when(oidcAPI.trustmarkURI()).thenReturn(OIDC_TRUSTMARK_URI);
         var invalidTrustmarkUserIdentityUserInfo =
                 new UserInfo(
@@ -347,13 +354,19 @@ class IPVCallbackHelperTest {
                                         "vot", "P2",
                                         "vtm", OIDC_TRUSTMARK_URI.toString())));
 
-        helper.validateUserIdentityResponse(
-                invalidTrustmarkUserIdentityUserInfo,
-                VTR_LIST_P2_ONLY,
-                TEST_INTERNAL_COMMON_SUBJECT_ID);
-        assertThat(
-                logging.events(),
-                hasItem(withMessageContaining("Mismatch in identity subject claim")));
+        var exception =
+                assertThrows(
+                        IpvCallbackException.class,
+                        () ->
+                                helper.validateUserIdentityResponse(
+                                        invalidTrustmarkUserIdentityUserInfo,
+                                        VTR_LIST_P2_ONLY,
+                                        TEST_INTERNAL_COMMON_SUBJECT_ID),
+                        "Expected to throw IpvCallbackException");
+
+        assertEquals(
+                "Subject (sub) claim in identity information does not match session",
+                exception.getMessage());
     }
 
     @Test

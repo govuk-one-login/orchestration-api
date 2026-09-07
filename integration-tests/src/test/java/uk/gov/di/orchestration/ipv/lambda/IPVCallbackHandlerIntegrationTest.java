@@ -132,25 +132,24 @@ class IPVCallbackHandlerIntegrationTest extends ApiGatewayHandlerIntegrationTest
 
     private static String base64EncodedSalt;
     private static String rpPairwiseId;
+    private static String internalCommonSubjectId;
 
     @BeforeEach
     void setup() {
-        ipvStub.init();
+        var salt = SaltHelper.generateNewSalt();
+        base64EncodedSalt = Base64.getEncoder().encodeToString(salt);
+        internalCommonSubjectId =
+                calculatePairwiseIdentifier(
+                        TEST_SUBJECT.getValue(), TEST_INTERNAL_SECTOR_HOST, salt);
+        rpPairwiseId =
+                calculatePairwiseIdentifier(TEST_SUBJECT.getValue(), TEST_RP_SECTOR_HOST, salt);
+        ipvStub.init(internalCommonSubjectId);
         configurationService = new TestConfigurationService(ipvStub);
         handler = new IPVCallbackHandler(configurationService);
         txmaAuditQueue.clear();
         spotRequestQueue.clear();
 
         setupClientStore();
-
-        var salt = SaltHelper.generateNewSalt();
-        base64EncodedSalt = Base64.getEncoder().encodeToString(salt);
-        var internalCommonSubjectId =
-                calculatePairwiseIdentifier(
-                        TEST_SUBJECT.getValue(), TEST_INTERNAL_SECTOR_HOST, salt);
-        rpPairwiseId =
-                calculatePairwiseIdentifier(TEST_SUBJECT.getValue(), TEST_RP_SECTOR_HOST, salt);
-
         setupOrchSession(internalCommonSubjectId);
         setupAuthUserInfoTable(internalCommonSubjectId);
     }
@@ -476,9 +475,9 @@ class IPVCallbackHandlerIntegrationTest extends ApiGatewayHandlerIntegrationTest
     void shouldStoreReturnCodesInDynamoWhenTheyArePresent(boolean validLoC)
             throws Json.JsonException {
         if (validLoC) {
-            ipvStub.initWithValidLoCAndReturnCode();
+            ipvStub.initWithValidLoCAndReturnCode(internalCommonSubjectId);
         } else {
-            ipvStub.initWithInvalidLoCAndReturnCode();
+            ipvStub.initWithInvalidLoCAndReturnCode(internalCommonSubjectId);
         }
 
         var scope = new Scope(OIDCScopeValue.OPENID);
@@ -553,7 +552,7 @@ class IPVCallbackHandlerIntegrationTest extends ApiGatewayHandlerIntegrationTest
 
     @Test
     void shouldBypassSPoTAndReturnAuthCodeIfIPVReturnsP0ButReturnCodeIsPresentAndRequested() {
-        ipvStub.initWithInvalidLoCAndReturnCode();
+        ipvStub.initWithInvalidLoCAndReturnCode(internalCommonSubjectId);
 
         var scope = new Scope(OIDCScopeValue.OPENID);
         var oidcValidClaimsRequest =
@@ -595,7 +594,7 @@ class IPVCallbackHandlerIntegrationTest extends ApiGatewayHandlerIntegrationTest
     @Test
     void
             shouldBypassSPoTAndReturnAccessDeniedErrorIfIPVReturnsP0AndReturnCodeIsPresentButNotRequested() {
-        ipvStub.initWithInvalidLoCAndReturnCode();
+        ipvStub.initWithInvalidLoCAndReturnCode(internalCommonSubjectId);
 
         var sessionId = "some-session-id";
         var scope = new Scope(OIDCScopeValue.OPENID);
