@@ -11,9 +11,11 @@ import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import uk.gov.di.orchestration.identity.exceptions.IdentityCallbackException;
 import uk.gov.di.orchestration.shared.entity.LevelOfConfidence;
 import uk.gov.di.orchestration.shared.exceptions.UnsuccessfulCredentialResponseException;
+import uk.gov.di.orchestration.sharedtest.logging.CaptureLoggingExtension;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,21 +24,23 @@ import java.util.List;
 import static com.nimbusds.oauth2.sdk.OAuth2Error.ACCESS_DENIED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.orchestration.identity.utils.IdentityCallbackUtils.validateUserIdentityResponse;
+import static uk.gov.di.orchestration.sharedtest.logging.LogEventMatcher.withMessageContaining;
 
 class IdentityCallbackUtilsTest {
 
     private static final String TRUSTMARK_URL = "http://test.com/trustmark";
-    private static final Subject SUBJECT =
+    private static final Subject TEST_INTERNAL_COMMON_SUBJECT_ID =
             new Subject("urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6");
     private static final String SUCCESSFUL_USER_INFO_HTTP_RESPONSE_CONTENT =
             "{"
                     + " \"sub\": \""
-                    + SUBJECT
+                    + TEST_INTERNAL_COMMON_SUBJECT_ID
                     + "\","
                     + " \"vot\": \"P2\","
                     + " \"vtm\": \"<trust mark>\""
@@ -45,6 +49,10 @@ class IdentityCallbackUtilsTest {
     private static final BearerAccessToken BEARER_ACCESS_TOKEN = new BearerAccessToken();
     private static final TokenResponse SUCCESSFUL_TOKEN_RESPONSE =
             new AccessTokenResponse(new Tokens(BEARER_ACCESS_TOKEN, null));
+
+    @RegisterExtension
+    private final CaptureLoggingExtension logging =
+            new CaptureLoggingExtension(IdentityCallbackUtils.class);
 
     @Nested
     class SendUserIdentityRequest {
@@ -68,7 +76,7 @@ class IdentityCallbackUtilsTest {
 
             var response = IdentityCallbackUtils.sendUserIdentityRequest(mockedRequest);
 
-            assertThat(response.getSubject(), equalTo(SUBJECT));
+            assertThat(response.getSubject(), equalTo(TEST_INTERNAL_COMMON_SUBJECT_ID));
         }
 
         @Test
@@ -91,7 +99,7 @@ class IdentityCallbackUtilsTest {
 
             var response = IdentityCallbackUtils.sendUserIdentityRequest(mockedRequest);
 
-            assertThat(response.getSubject(), equalTo(SUBJECT));
+            assertThat(response.getSubject(), equalTo(TEST_INTERNAL_COMMON_SUBJECT_ID));
         }
 
         @Test
@@ -123,12 +131,15 @@ class IdentityCallbackUtilsTest {
         @Test
         void shouldReturnAccessDeniedIfVotIsNotContainedInRequestedLoCs()
                 throws IdentityCallbackException {
-            var userInfo = new UserInfo(SUBJECT);
+            var userInfo = new UserInfo(TEST_INTERNAL_COMMON_SUBJECT_ID);
             userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
 
             var result =
                     validateUserIdentityResponse(
-                            userInfo, List.of(LevelOfConfidence.NONE), TRUSTMARK_URL);
+                            userInfo,
+                            List.of(LevelOfConfidence.NONE),
+                            TRUSTMARK_URL,
+                            TEST_INTERNAL_COMMON_SUBJECT_ID.getValue());
 
             assertTrue(result.isPresent());
             assertThat(result.get(), equalTo(ACCESS_DENIED));
@@ -136,7 +147,7 @@ class IdentityCallbackUtilsTest {
 
         @Test
         void shouldThrowExceptionWhenVtmDoesNotEqualTrustmarkUrl() {
-            var userInfo = new UserInfo(SUBJECT);
+            var userInfo = new UserInfo(TEST_INTERNAL_COMMON_SUBJECT_ID);
             userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
             userInfo.setClaim("vtm", "http://different-trustmark-url");
 
@@ -146,19 +157,39 @@ class IdentityCallbackUtilsTest {
                             validateUserIdentityResponse(
                                     userInfo,
                                     List.of(LevelOfConfidence.MEDIUM_LEVEL),
-                                    TRUSTMARK_URL));
+                                    TRUSTMARK_URL,
+                                    TEST_INTERNAL_COMMON_SUBJECT_ID.getValue()));
+        }
+
+        @Test
+        void shouldLogAWarnForSubMismatch() throws IdentityCallbackException {
+            var userInfo = new UserInfo(new Subject("a-different-subject-claim"));
+            userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
+            userInfo.setClaim("vtm", TRUSTMARK_URL);
+
+            validateUserIdentityResponse(
+                    userInfo,
+                    List.of(LevelOfConfidence.MEDIUM_LEVEL),
+                    TRUSTMARK_URL,
+                    TEST_INTERNAL_COMMON_SUBJECT_ID.getValue());
+            assertThat(
+                    logging.events(),
+                    hasItem(withMessageContaining("Mismatch in identity subject claim")));
         }
 
         @Test
         void shouldNotReturnErrorIfVotIsInRequestedLoCsAndVtmMatchesTrustmarkUrl()
                 throws IdentityCallbackException {
-            var userInfo = new UserInfo(SUBJECT);
+            var userInfo = new UserInfo(TEST_INTERNAL_COMMON_SUBJECT_ID);
             userInfo.setClaim("vot", LevelOfConfidence.MEDIUM_LEVEL.getValue());
             userInfo.setClaim("vtm", TRUSTMARK_URL);
 
             var result =
                     validateUserIdentityResponse(
-                            userInfo, List.of(LevelOfConfidence.MEDIUM_LEVEL), TRUSTMARK_URL);
+                            userInfo,
+                            List.of(LevelOfConfidence.MEDIUM_LEVEL),
+                            TRUSTMARK_URL,
+                            TEST_INTERNAL_COMMON_SUBJECT_ID.getValue());
 
             assertTrue(result.isEmpty());
         }

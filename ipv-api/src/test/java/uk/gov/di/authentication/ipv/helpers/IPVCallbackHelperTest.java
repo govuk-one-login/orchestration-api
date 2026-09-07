@@ -161,7 +161,7 @@ class IPVCallbackHelperTest {
             new UserInfo(
                     new JSONObject(
                             Map.of(
-                                    "sub", "sub-val",
+                                    "sub", TEST_INTERNAL_COMMON_SUBJECT_ID,
                                     "vot", "P1",
                                     "vtm", OIDC_TRUSTMARK_URI.toString(),
                                     "https://vocab.account.gov.uk/v1/coreIdentity", "core-identity",
@@ -170,7 +170,7 @@ class IPVCallbackHelperTest {
             new UserInfo(
                     new JSONObject(
                             Map.of(
-                                    "sub", "sub-val",
+                                    "sub", TEST_INTERNAL_COMMON_SUBJECT_ID,
                                     "vot", "P2",
                                     "vtm", OIDC_TRUSTMARK_URI.toString(),
                                     "https://vocab.account.gov.uk/v1/coreIdentity", "core-identity",
@@ -180,7 +180,7 @@ class IPVCallbackHelperTest {
             new UserInfo(
                     new JSONObject(
                             Map.of(
-                                    "sub", "sub-val",
+                                    "sub", TEST_INTERNAL_COMMON_SUBJECT_ID,
                                     "vot", "P3",
                                     "vtm", OIDC_TRUSTMARK_URI.toString(),
                                     "https://vocab.account.gov.uk/v1/coreIdentity", "core-identity",
@@ -268,7 +268,9 @@ class IPVCallbackHelperTest {
     void shouldReturnEmptyErrorObjectIfUserIdentityVotInVtrList(
             UserInfo userInfo, List<VectorOfTrust> vtrList) throws IpvCallbackException {
         when(oidcAPI.trustmarkURI()).thenReturn(OIDC_TRUSTMARK_URI);
-        var response = helper.validateUserIdentityResponse(userInfo, vtrList);
+        var response =
+                helper.validateUserIdentityResponse(
+                        userInfo, vtrList, TEST_INTERNAL_COMMON_SUBJECT_ID);
         assertEquals(Optional.empty(), response);
 
         assertNoAuthorisationCodeGeneratedAndSaved();
@@ -283,7 +285,9 @@ class IPVCallbackHelperTest {
 
         var response =
                 helper.validateUserIdentityResponse(
-                        missingVotUserIdentityUserInfo, VTR_LIST_P2_ONLY);
+                        missingVotUserIdentityUserInfo,
+                        VTR_LIST_P2_ONLY,
+                        TEST_INTERNAL_COMMON_SUBJECT_ID);
 
         assertEquals(Optional.of(OAuth2Error.ACCESS_DENIED), response);
 
@@ -293,7 +297,10 @@ class IPVCallbackHelperTest {
     @Test
     void shouldReturnAccessDeniedIfIpvVotNotInVtrList() throws IpvCallbackException {
         var response =
-                helper.validateUserIdentityResponse(p0VotUserIdentityUserInfo, VTR_LIST_P2_ONLY);
+                helper.validateUserIdentityResponse(
+                        p0VotUserIdentityUserInfo,
+                        VTR_LIST_P2_ONLY,
+                        TEST_INTERNAL_COMMON_SUBJECT_ID);
 
         assertEquals(Optional.of(OAuth2Error.ACCESS_DENIED), response);
 
@@ -307,21 +314,46 @@ class IPVCallbackHelperTest {
                 new UserInfo(
                         new JSONObject(
                                 Map.of(
-                                        "sub", "sub-val",
-                                        "vot", "P2",
-                                        "vtm", "invalidBaseUrl" + "/trustmark")));
+                                        "sub",
+                                        TEST_INTERNAL_COMMON_SUBJECT_ID,
+                                        "vot",
+                                        "P2",
+                                        "vtm",
+                                        "invalidBaseUrl" + "/trustmark")));
 
         var exception =
                 assertThrows(
                         IpvCallbackException.class,
                         () ->
                                 helper.validateUserIdentityResponse(
-                                        invalidTrustmarkUserIdentityUserInfo, VTR_LIST_P2_ONLY),
+                                        invalidTrustmarkUserIdentityUserInfo,
+                                        VTR_LIST_P2_ONLY,
+                                        TEST_INTERNAL_COMMON_SUBJECT_ID),
                         "Expected to throw IpvCallbackException");
 
         assertEquals("IPV trustmark is invalid", exception.getMessage());
 
         assertNoAuthorisationCodeGeneratedAndSaved();
+    }
+
+    @Test
+    void shouldLogWarnIfSubjectClaimsDoNotMAtch() throws IpvCallbackException {
+        when(oidcAPI.trustmarkURI()).thenReturn(OIDC_TRUSTMARK_URI);
+        var invalidTrustmarkUserIdentityUserInfo =
+                new UserInfo(
+                        new JSONObject(
+                                Map.of(
+                                        "sub", "not-expected-subject",
+                                        "vot", "P2",
+                                        "vtm", OIDC_TRUSTMARK_URI.toString())));
+
+        helper.validateUserIdentityResponse(
+                invalidTrustmarkUserIdentityUserInfo,
+                VTR_LIST_P2_ONLY,
+                TEST_INTERNAL_COMMON_SUBJECT_ID);
+        assertThat(
+                logging.events(),
+                hasItem(withMessageContaining("Mismatch in identity subject claim")));
     }
 
     @Test

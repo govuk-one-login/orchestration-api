@@ -132,9 +132,14 @@ public class IPVCallbackHelper {
     }
 
     public Optional<ErrorObject> validateUserIdentityResponse(
-            UserInfo userIdentityUserInfo, List<VectorOfTrust> vtrList)
+            UserInfo userIdentityUserInfo,
+            List<VectorOfTrust> vtrList,
+            String internalCommonSubjectId)
             throws IpvCallbackException {
         LOG.info("Validating userinfo response");
+
+        checkSubject(internalCommonSubjectId, userIdentityUserInfo);
+
         for (VectorOfTrust vtr : vtrList) {
             if (vtr.getLevelOfConfidence()
                     .getValue()
@@ -150,6 +155,16 @@ public class IPVCallbackHelper {
         }
         LOG.warn("IPV missing vot or vot not in vtr list.");
         return Optional.of(OAuth2Error.ACCESS_DENIED);
+    }
+
+    private void checkSubject(String internalCommonSubjectId, UserInfo userIdentityUserInfo) {
+        try {
+            if (!internalCommonSubjectId.equals(userIdentityUserInfo.getSubject().getValue())) {
+                LOG.warn("Mismatch in identity subject claim");
+            }
+        } catch (Exception e) {
+            LOG.warn("Unexpected exception when checking subject claims: {}", e.getMessage());
+        }
     }
 
     public AuthenticationSuccessResponse generateReturnCodeAuthenticationResponse(
