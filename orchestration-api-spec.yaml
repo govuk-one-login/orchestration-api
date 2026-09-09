@@ -66,15 +66,6 @@ paths:
         passthroughBehavior: "when_no_match"
         timeoutInMillis: 29000
         type: "aws_proxy"
-  /auth-code:
-    get:
-      x-amazon-apigateway-integration:
-        uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthCodeFunction.Arn}:latest/invocations"
-        httpMethod: "POST"
-        passthroughBehavior: "when_no_match"
-        timeoutInMillis: 29000
-        type: "aws_proxy"
   /logout:
     get:
       x-amazon-apigateway-integration:
