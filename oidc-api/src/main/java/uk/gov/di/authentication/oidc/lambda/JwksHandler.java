@@ -62,7 +62,6 @@ public class JwksHandler
     public APIGatewayProxyResponseEvent jwksRequestHandler(
             APIGatewayProxyRequestEvent input, Context context) {
         try {
-            LOG.info("JWKs request received");
 
             List<JWK> signingKeys = new ArrayList<>();
 
@@ -75,8 +74,6 @@ public class JwksHandler
             }
 
             JWKSet jwkSet = new JWKSet(signingKeys);
-
-            LOG.info("Generating JWKs successful response");
 
             return generateApiGatewayProxyResponse(
                     200,

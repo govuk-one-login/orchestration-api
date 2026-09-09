@@ -58,7 +58,6 @@ public class VectorOfTrust {
             // which is a json list
             // The .get(0) below returns the json list - it doesn't just get the first element of
             // the Vector of Trust
-            LOG.info("VTR attribute before parsing: {}", vtr.get(0));
             vtrJsonArray = (JSONArray) parser.parse(vtr.get(0));
         } catch (net.minidev.json.parser.ParseException | ClassCastException e) {
             LOG.warn("Error when parsing vtr attribute", e);
@@ -75,10 +74,12 @@ public class VectorOfTrust {
             return List.of(new VectorOfTrust(CredentialTrustLevel.getDefault()));
         }
         JSONArray vtrJsonArray = parseJSONArrayFromAuthRequestAttribute(vtr);
-        List<VectorOfTrust> vtrList = parseVtrSet(vtrJsonArray);
-        String vtrs = stringifyVtrList(vtrList);
+        return parseVtrSet(vtrJsonArray);
+    }
+
+    public static void logStringifiedVtrList(List<VectorOfTrust> vtr) {
+        String vtrs = stringifyVtrList(vtr);
         LOG.info("VTR list has been processed as vectorOfTrust list: [{}]", vtrs);
-        return vtrList;
     }
 
     public static VectorOfTrust getLowestVtr(List<VectorOfTrust> vtrList) {

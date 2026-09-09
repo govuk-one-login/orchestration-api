@@ -149,8 +149,11 @@ public class OrchestrationAuthorizationService {
     }
 
     public List<VectorOfTrust> getVtrList(AuthenticationRequest authenticationRequest) {
-        return VectorOfTrust.parseFromAuthRequestAttribute(
-                authenticationRequest.getCustomParameter(VTR_PARAM));
+        var vtr =
+                VectorOfTrust.parseFromAuthRequestAttribute(
+                        authenticationRequest.getCustomParameter(VTR_PARAM));
+        VectorOfTrust.logStringifiedVtrList(vtr);
+        return vtr;
     }
 
     public String getExistingOrCreateNewPersistentSessionId(Map<String, String> headers) {

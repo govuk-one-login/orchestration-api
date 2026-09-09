@@ -39,7 +39,6 @@ public class TrustMarkHandler
     @Override
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
-        LOG.info("TrustMark request received");
 
         ThreadContext.clearMap();
         attachTraceId();

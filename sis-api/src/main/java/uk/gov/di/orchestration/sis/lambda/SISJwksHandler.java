@@ -52,15 +52,12 @@ public class SISJwksHandler
     public APIGatewayProxyResponseEvent sisJwksRequestHandler() {
         try {
             attachTraceId();
-            LOG.info("SISJwks request received");
 
             List<JWK> signingKeys = new ArrayList<>();
 
             signingKeys.add(jwksService.getPublicSisTokenJwkWithOpaqueId());
 
             JWKSet jwkSet = new JWKSet(signingKeys);
-
-            LOG.info("Generating SISJwks successful response");
 
             return generateApiGatewayProxyResponse(
                     200,
