@@ -96,9 +96,7 @@ public class OrchAuthCodeService extends BaseDynamoService<OrchAuthCodeItem> {
     }
 
     public Optional<AuthCodeExchangeData> getExchangeDataForCode(String code) {
-        LOG.info(
-                "Retrieving authorisation code exchange data from orch auth code store. Code: {}",
-                code);
+        LOG.info("Retrieving authorisation code exchange data from orch auth code store");
 
         Optional<OrchAuthCodeItem> authCodeItem = Optional.empty();
 
