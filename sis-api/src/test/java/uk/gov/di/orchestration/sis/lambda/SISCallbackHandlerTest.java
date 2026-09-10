@@ -3,6 +3,7 @@ package uk.gov.di.orchestration.sis.lambda;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.oauth2.sdk.AccessTokenResponse;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.ErrorObject;
@@ -18,9 +19,11 @@ import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCClaimsRequest;
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue;
+import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +47,7 @@ import uk.gov.di.orchestration.shared.entity.OrchSessionItem;
 import uk.gov.di.orchestration.shared.entity.ResponseHeaders;
 import uk.gov.di.orchestration.shared.entity.VectorOfTrust;
 import uk.gov.di.orchestration.shared.exceptions.NoSessionException;
+import uk.gov.di.orchestration.shared.exceptions.UnsuccessfulCredentialResponseException;
 import uk.gov.di.orchestration.shared.helpers.IdGenerator;
 import uk.gov.di.orchestration.shared.oauth.OAuthService;
 import uk.gov.di.orchestration.shared.services.AuditService;
@@ -71,9 +75,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static uk.gov.di.orchestration.shared.entity.ValidClaims.RETURN_CODE;
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
 import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyResponseEventMatcher.hasStatus;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.AUTH_AUTH_CODE_ISSUED;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_UNSUCCESSFUL_TOKEN_RESPONSE_RECEIVED;
 
@@ -96,10 +104,12 @@ public class SISCallbackHandlerTest {
     private static final String FRONT_END_AIS_LOGOUT_URL = "https://example.com/ais-logout";
     private static final URI SIS_ERROR_URI = URI.create("https://sis/error/unreachable");
     private static final AuthorizationCode AUTH_CODE = new AuthorizationCode();
+    private static final AuthorizationCode NEW_AUTH_CODE = new AuthorizationCode();
     private static final String COOKIE = "Cookie";
     private static final String SESSION_ID = "a-session-id";
     private static final String CLIENT_SESSION_ID = "a-client-session-id";
-    private static final List<String> REQUESTED_LOCS = List.of("P2", "P0");
+    private static final List<LevelOfConfidence> REQUESTED_LOCS =
+            List.of(LevelOfConfidence.MEDIUM_LEVEL, LevelOfConfidence.NONE);
     private static final String PERSISTENT_SESSION_ID = IdGenerator.generate() + "--1700558480962";
     private static final State STATE = new State();
     private static final URI REDIRECT_URI = URI.create("http://rp-redirect");
@@ -108,6 +118,8 @@ public class SISCallbackHandlerTest {
     private static final AuthenticationRequest NO_SESSION_AUTH_REQUEST = generateAuthRequest(null);
     private static final String TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER =
             "urn:fdc:gov.uk:2022:0VzHWj9aaJpyHXJX8B5QJ-UOUibweHmkSg1GjF6w9yM";
+    private static final String RP_PAIRWISE_SUBJECT =
+            "urn:fdc:gov.uk:2022:_WJvfEzqmWo6vnDwSqgMPTC-aK8n_fkgZsNF-a4OxxU";
     private static final UserInfo AUTH_USER_INFO = generateAuthUserInfo();
     private static final SISCallbackValidationError GENERIC_ACCESS_DENIED_ERROR =
             new SISCallbackValidationError("access_denied", "No access", true, false);
@@ -135,7 +147,7 @@ public class SISCallbackHandlerTest {
             new AuthenticationErrorResponse(
                             URI.create(REDIRECT_URI.toString()), ACCESS_DENIED, RP_STATE, null)
                     .toURI();
-    private static final APIGatewayProxyResponseEvent genericErrorRedirect =
+    private static final APIGatewayProxyResponseEvent GENERIC_ERROR_REDIRECT =
             RedirectService.redirectToFrontendErrorPageWithErrorLog(
                     FRONT_END_ERROR_URI, new Error("error"));
     private static final AccessTokenResponse SUCCESSFUL_TOKEN_RESPONSE =
@@ -147,11 +159,12 @@ public class SISCallbackHandlerTest {
     private final OrchSessionItem orchSession =
             new OrchSessionItem(SESSION_ID)
                     .withInternalCommonSubjectId(TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER);
-    private final AuthenticationRequest authRequest = generateAuthRequest(new OIDCClaimsRequest());
+    private final AuthenticationRequest authRequestWithNoClaims =
+            generateAuthRequest(new OIDCClaimsRequest());
     private final OrchClientSessionItem orchClientSession =
             new OrchClientSessionItem(
                             CLIENT_SESSION_ID,
-                            authRequest.toParameters(),
+                            authRequestWithNoClaims.toParameters(),
                             null,
                             List.of(
                                     VectorOfTrust.of(
@@ -169,7 +182,9 @@ public class SISCallbackHandlerTest {
     @BeforeEach
     void setup() {
         when(identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(any(Throwable.class)))
-                .thenReturn(genericErrorRedirect);
+                .thenReturn(GENERIC_ERROR_REDIRECT);
+        when(identityCallbackHelper.redirectToFrontendErrorPageWithWarnLog(any(Exception.class)))
+                .thenReturn(GENERIC_ERROR_REDIRECT);
         when(identityCallbackHelper.redirectToFrontendErrorPageForNoSession(any(Exception.class)))
                 .thenReturn(
                         RedirectService.redirectToFrontendErrorPageWithErrorLog(
@@ -201,7 +216,6 @@ public class SISCallbackHandlerTest {
                                 "",
                                 Map.of(ResponseHeaders.LOCATION, ACCESS_DENIED_URI.toString()),
                                 null));
-
         when(configurationService.isIdentityEnabled()).thenReturn(true);
         when(configurationService.getSISErrorUrl()).thenReturn(SIS_ERROR_URI);
         handler =
@@ -236,8 +250,7 @@ public class SISCallbackHandlerTest {
         var response = handler.handleRequest(request, context);
 
         assertDoesRedirectToPage(response, REDIRECT_URI.toString());
-        assertAuditEventSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
-        verifyNoMoreInteractions(auditService);
+        assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
     }
 
     @Test
@@ -262,8 +275,7 @@ public class SISCallbackHandlerTest {
         var response = handler.handleRequest(request, context);
 
         assertDoesRedirectToPage(response, REDIRECT_URI.toString());
-        assertAuditEventSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
-        verifyNoMoreInteractions(auditService);
+        assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
     }
 
     @Test
@@ -293,8 +305,7 @@ public class SISCallbackHandlerTest {
             var response = handler.handleRequest(request, context);
 
             assertDoesRedirectToPage(response, IPV_URI.toString());
-            assertAuditEventSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
-            verifyNoMoreInteractions(auditService);
+            assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
         }
 
         @Test
@@ -317,8 +328,7 @@ public class SISCallbackHandlerTest {
             var response = handler.handleRequest(request, context);
 
             assertDoesRedirectToPage(response, IPV_URI.toString());
-            assertAuditEventSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
-            verifyNoMoreInteractions(auditService);
+            assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
         }
 
         @Test
@@ -336,8 +346,7 @@ public class SISCallbackHandlerTest {
             var response = handler.handleRequest(request, context);
 
             assertDoesRedirectToPage(response, FRONT_END_AIS_LOGOUT_URL);
-            assertAuditEventSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
-            verifyNoMoreInteractions(auditService);
+            assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
         }
 
         @Test
@@ -359,15 +368,14 @@ public class SISCallbackHandlerTest {
                             + "?error=access_denied"
                             + "&error_description=Access+denied+by+resource+owner+or+authorization+server"
                             + "&state="
-                            + authRequest.getState());
-            assertAuditEventSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
-            verifyNoMoreInteractions(auditService);
+                            + authRequestWithNoClaims.getState());
+            assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
         }
 
         private void mockIpvRedirect(APIGatewayProxyRequestEvent request, boolean updateRequested) {
             when(ipvAuthorisationService.sendRequestToIPV(
                             eq(request),
-                            eqAuthRequest(authRequest),
+                            eqAuthRequest(authRequestWithNoClaims),
                             eq(AUTH_USER_INFO),
                             eq(SESSION_ID),
                             eq(client),
@@ -375,7 +383,7 @@ public class SISCallbackHandlerTest {
                             eq(CLIENT_SESSION_ID),
                             eq(PERSISTENT_SESSION_ID),
                             eq(false),
-                            eq(REQUESTED_LOCS),
+                            eq(REQUESTED_LOCS.stream().map(LevelOfConfidence::getValue).toList()),
                             eq(updateRequested)))
                     .thenReturn(
                             generateApiGatewayProxyResponse(
@@ -395,9 +403,172 @@ public class SISCallbackHandlerTest {
         var response = handler.handleRequest(request, context);
 
         assertDoesRedirectToPage(response, SIS_ERROR_URI.toString());
-        assertAuditEventSubmitted(ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
-        assertAuditEventSubmitted(ORCH_SIS_UNSUCCESSFUL_TOKEN_RESPONSE_RECEIVED);
-        verifyNoMoreInteractions(auditService);
+        assertAuditEventsSubmitted(
+                ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
+                ORCH_SIS_UNSUCCESSFUL_TOKEN_RESPONSE_RECEIVED);
+    }
+
+    @Nested
+    class UserIdentityValidation {
+        @Test
+        void shouldRedirectToErrorPageWhenUserIdentityRequestTimesOut() throws Exception {
+            when(sisAuthorisationService.getToken(AUTH_CODE.getValue()))
+                    .thenReturn(SUCCESSFUL_TOKEN_RESPONSE);
+            when(sisAuthorisationService.getUserInfo(SUCCESSFUL_TOKEN_RESPONSE))
+                    .thenThrow(new UnsuccessfulCredentialResponseException("timed out!"));
+            var request = createRequestEvent();
+            usingValidIdentityContext(request);
+
+            var response = handler.handleRequest(request, context);
+
+            assertDoesRedirectToPage(response, FRONT_END_ERROR_URI.toString());
+            assertAuditEventsSubmitted(
+                    ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
+                    ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED);
+        }
+
+        @Test
+        void
+                shouldRedirectToLogoutPageWhenAISInterventionOccursAfterUserIdentityResponseValidationFailure()
+                        throws Exception {
+            mockValidationFailed(new UserInfo(new Subject("sis-subject")));
+            mockAisIntervention();
+            var request = createRequestEvent();
+            usingValidIdentityContext(request);
+
+            var response = handler.handleRequest(request, context);
+            assertDoesRedirectToPage(response, FRONT_END_AIS_LOGOUT_URL);
+            assertAuditEventsSubmitted(
+                    ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
+                    ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
+                    ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+        }
+
+        @Test
+        void
+                shouldRedirectToRPWithErrorIfValidationFailedAndReturnCodeNotPresentInUserIdentityResponse()
+                        throws Exception {
+            mockValidationFailed(new UserInfo(new Subject("sis-subject")));
+            var request = createRequestEvent();
+            usingValidIdentityContext(request);
+
+            var response = handler.handleRequest(request, context);
+            assertDoesRedirectToPage(
+                    response,
+                    REDIRECT_URI
+                            + "?error=validation_failure"
+                            + "&state="
+                            + authRequestWithNoClaims.getState());
+            assertAuditEventsSubmitted(
+                    ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
+                    ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
+                    ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+        }
+
+        @Nested
+        class ReturnCodeClientJourneys {
+            private static final UserInfo userInfoWithReturnCode =
+                    new UserInfo(
+                            new JWTClaimsSet.Builder()
+                                    .subject("sis-subject")
+                                    .claim(RETURN_CODE.getValue(), List.of("test"))
+                                    .build());
+            private final AuthenticationRequest authRequestWithReturnCodeClaim =
+                    generateAuthRequest(
+                            new OIDCClaimsRequest()
+                                    .withUserInfoClaimsRequest(
+                                            new ClaimsSetRequest().add(RETURN_CODE.getValue())));
+            private final ClientRegistry clientWithReturnCode =
+                    new ClientRegistry()
+                            .withClientID(CLIENT_ID.getValue())
+                            .withClientName("test-client")
+                            .withRedirectUrls(singletonList(REDIRECT_URI.toString()))
+                            .withSectorIdentifierUri("https://test.com")
+                            .withSubjectType("pairwise")
+                            .withClaims(List.of(RETURN_CODE.getValue()));
+
+            @Test
+            void shouldRedirectBackToRPIfValidationFailedAndReturnCodeRequested() throws Exception {
+                var request = createRequestEvent();
+                usingIdentityContext(
+                        request,
+                        new IdentityContext(
+                                orchSession,
+                                orchClientSession.withAuthRequestParams(
+                                        authRequestWithReturnCodeClaim.toParameters()),
+                                clientWithReturnCode,
+                                AUTH_USER_INFO,
+                                authRequestWithReturnCodeClaim));
+                mockValidationFailedWithReturnCodeClaim();
+                mockSuccessfulAuthResponse(authRequestWithReturnCodeClaim);
+
+                var response = handler.handleRequest(request, context);
+
+                verify(identityCallbackHelper)
+                        .saveIdentityClaimsToDynamo(
+                                CLIENT_SESSION_ID,
+                                new Subject(RP_PAIRWISE_SUBJECT),
+                                userInfoWithReturnCode,
+                                null);
+                assertDoesRedirectToPage(
+                        response,
+                        REDIRECT_URI
+                                + "?code="
+                                + NEW_AUTH_CODE
+                                + "&state="
+                                + authRequestWithReturnCodeClaim.getState());
+                assertAuditEventsSubmitted(
+                        ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
+                        ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
+                        ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED,
+                        AUTH_AUTH_CODE_ISSUED);
+            }
+
+            @Test
+            void
+                    shouldRedirectBackToRPWithErrorIfValidationFailedAndReturnCodeNotRequestedButReturnCodePresentInUserIdentityResponse()
+                            throws Exception {
+                var request = createRequestEvent();
+                usingIdentityContext(
+                        request,
+                        new IdentityContext(
+                                orchSession,
+                                orchClientSession.withAuthRequestParams(
+                                        authRequestWithNoClaims.toParameters()),
+                                clientWithReturnCode,
+                                AUTH_USER_INFO,
+                                authRequestWithNoClaims));
+                mockValidationFailedWithReturnCodeClaim();
+
+                var response = handler.handleRequest(request, context);
+
+                assertDoesRedirectToPage(
+                        response,
+                        REDIRECT_URI
+                                + "?error=access_denied"
+                                + "&error_description=Access+denied+by+resource+owner+or+authorization+server"
+                                + "&state="
+                                + authRequestWithNoClaims.getState());
+                assertAuditEventsSubmitted(
+                        ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
+                        ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
+                        ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+            }
+
+            private void mockValidationFailedWithReturnCodeClaim() throws Exception {
+                mockValidationFailed(userInfoWithReturnCode);
+            }
+        }
+
+        private void mockValidationFailed(UserInfo userInfo) throws Exception {
+            when(sisAuthorisationService.getToken(AUTH_CODE.getValue()))
+                    .thenReturn(SUCCESSFUL_TOKEN_RESPONSE);
+            when(sisAuthorisationService.getUserInfo(SUCCESSFUL_TOKEN_RESPONSE))
+                    .thenReturn(userInfo);
+            when(identityCallbackHelper.validateUserIdentityResponse(
+                            userInfo, REQUESTED_LOCS, TEST_INTERNAL_COMMON_SUBJECT_IDENTIFIER))
+                    .thenReturn(Optional.of(new ErrorObject("validation_failure")));
+        }
     }
 
     private APIGatewayProxyRequestEvent createRequestEvent() {
@@ -476,7 +647,12 @@ public class SISCallbackHandlerTest {
                                 orchClientSession,
                                 client,
                                 AUTH_USER_INFO,
-                                authRequest));
+                                authRequestWithNoClaims));
+    }
+
+    private void usingIdentityContext(
+            APIGatewayProxyRequestEvent request, IdentityContext identityContext) throws Exception {
+        when(identityContextService.buildContext(request)).thenReturn(identityContext);
     }
 
     private void mockAisIntervention() {
@@ -500,15 +676,36 @@ public class SISCallbackHandlerTest {
                 .thenReturn(UNSUCCESSFUL_TOKEN_RESPONSE);
     }
 
+    private void mockSuccessfulAuthResponse(AuthenticationRequest authRequest) {
+        when(endOfJourneyService.generateSuccessfulAuthResponse(
+                        eqAuthRequest(authRequest),
+                        eq(CLIENT_ID.getValue()),
+                        eq(CLIENT_SESSION_ID),
+                        eq("test-email-address"),
+                        eq(orchSession)))
+                .thenReturn(
+                        new AuthenticationSuccessResponse(
+                                REDIRECT_URI,
+                                NEW_AUTH_CODE,
+                                null,
+                                null,
+                                authRequest.getState(),
+                                null,
+                                authRequest.getResponseMode()));
+    }
+
     private void assertDoesRedirectToPage(APIGatewayProxyResponseEvent response, String page) {
         assertThat(response, hasStatus(302));
         assertEquals(page, response.getHeaders().get("Location"));
     }
 
-    private void assertAuditEventSubmitted(AuditableEvent event) {
-        verify(auditService)
-                .submitAuditEventNoPrefix(
-                        eq(event), eq(CLIENT_ID.getValue()), any(TxmaAuditUser.class));
+    private void assertAuditEventsSubmitted(AuditableEvent... events) {
+        for (var event : events) {
+            verify(auditService)
+                    .submitAuditEventNoPrefix(
+                            eq(event), eq(CLIENT_ID.getValue()), any(TxmaAuditUser.class));
+        }
+        verifyNoMoreInteractions(auditService);
     }
 
     private static AuthenticationRequest eqAuthRequest(AuthenticationRequest expectedAuthRequest) {
