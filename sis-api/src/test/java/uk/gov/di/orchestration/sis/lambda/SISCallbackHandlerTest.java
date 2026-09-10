@@ -3,15 +3,19 @@ package uk.gov.di.orchestration.sis.lambda;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.nimbusds.oauth2.sdk.AccessTokenResponse;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.ErrorObject;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.id.Subject;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.Nonce;
@@ -69,7 +73,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
 import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyResponseEventMatcher.hasStatus;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_UNSUCCESSFUL_TOKEN_RESPONSE_RECEIVED;
 
 public class SISCallbackHandlerTest {
     private final Context context = mock(Context.class);
@@ -88,6 +94,7 @@ public class SISCallbackHandlerTest {
     private static final URI FRONT_END_SESSION_ENDED_URI =
             URI.create("https://example.com/session-ended");
     private static final String FRONT_END_AIS_LOGOUT_URL = "https://example.com/ais-logout";
+    private static final URI SIS_ERROR_URI = URI.create("https://sis/error/unreachable");
     private static final AuthorizationCode AUTH_CODE = new AuthorizationCode();
     private static final String COOKIE = "Cookie";
     private static final String SESSION_ID = "a-session-id";
@@ -128,6 +135,14 @@ public class SISCallbackHandlerTest {
             new AuthenticationErrorResponse(
                             URI.create(REDIRECT_URI.toString()), ACCESS_DENIED, RP_STATE, null)
                     .toURI();
+    private static final APIGatewayProxyResponseEvent genericErrorRedirect =
+            RedirectService.redirectToFrontendErrorPageWithErrorLog(
+                    FRONT_END_ERROR_URI, new Error("error"));
+    private static final AccessTokenResponse SUCCESSFUL_TOKEN_RESPONSE =
+            new AccessTokenResponse(new Tokens(new BearerAccessToken(), null));
+    private static final TokenErrorResponse UNSUCCESSFUL_TOKEN_RESPONSE =
+            new TokenErrorResponse(new ErrorObject("token error"));
+    private static final URI SIS_BACKEND_URI = URI.create("http://sis-backend");
 
     private final OrchSessionItem orchSession =
             new OrchSessionItem(SESSION_ID)
@@ -154,9 +169,7 @@ public class SISCallbackHandlerTest {
     @BeforeEach
     void setup() {
         when(identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(any(Throwable.class)))
-                .thenReturn(
-                        RedirectService.redirectToFrontendErrorPageWithErrorLog(
-                                FRONT_END_ERROR_URI, new Error("error")));
+                .thenReturn(genericErrorRedirect);
         when(identityCallbackHelper.redirectToFrontendErrorPageForNoSession(any(Exception.class)))
                 .thenReturn(
                         RedirectService.redirectToFrontendErrorPageWithErrorLog(
@@ -190,6 +203,7 @@ public class SISCallbackHandlerTest {
                                 null));
 
         when(configurationService.isIdentityEnabled()).thenReturn(true);
+        when(configurationService.getSISErrorUrl()).thenReturn(SIS_ERROR_URI);
         handler =
                 new SISCallbackHandler(
                         configurationService,
@@ -372,6 +386,20 @@ public class SISCallbackHandlerTest {
         }
     }
 
+    @Test
+    void shouldRedirectToSISErrorPageWhenTokenResponseIsUnsuccessful() throws Exception {
+        var request = createRequestEvent();
+        usingValidIdentityContext(request);
+        mockUnsuccessfulTokenResponse();
+
+        var response = handler.handleRequest(request, context);
+
+        assertDoesRedirectToPage(response, SIS_ERROR_URI.toString());
+        assertAuditEventSubmitted(ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
+        assertAuditEventSubmitted(ORCH_SIS_UNSUCCESSFUL_TOKEN_RESPONSE_RECEIVED);
+        verifyNoMoreInteractions(auditService);
+    }
+
     private APIGatewayProxyRequestEvent createRequestEvent() {
         return createRequestEvent(Map.of());
     }
@@ -465,6 +493,11 @@ public class SISCallbackHandlerTest {
                                         null,
                                         Map.of("Location", FRONT_END_AIS_LOGOUT_URL),
                                         null)));
+    }
+
+    private void mockUnsuccessfulTokenResponse() {
+        when(sisAuthorisationService.getToken(AUTH_CODE.getValue()))
+                .thenReturn(UNSUCCESSFUL_TOKEN_RESPONSE);
     }
 
     private void assertDoesRedirectToPage(APIGatewayProxyResponseEvent response, String page) {

@@ -295,6 +295,10 @@ public class ConfigurationService implements BaseLambdaConfiguration, AuditPubli
         return getURIOrEmpty("SIS_AUTHORISATION_CALLBACK_URI");
     }
 
+    public URI getSISErrorUrl() {
+        return getURIOrThrow("SIS_ERROR_URL");
+    }
+
     public String getSISAuthorisationClientId() {
         return System.getenv().getOrDefault("SIS_AUTHORISATION_CLIENT_ID", "");
     }
