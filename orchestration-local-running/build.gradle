@@ -17,6 +17,7 @@ dependencies {
             project(":orchestration-shared"),
             project(":oidc-api"),
             project(":ipv-api"),
+            project(":sis-api"),
             project(":doc-checking-app-api"),
             project(":client-registry-api")
     project(":sis-api")
