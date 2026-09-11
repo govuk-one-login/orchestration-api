@@ -225,7 +225,13 @@ public abstract class BaseAuthorizeValidator {
     }
 
     protected void validateResponseMode(String responseMode)
-            throws InvalidAuthorizeRequestException {
+            throws InvalidAuthorizeRequestException, IllegalArgumentException {
+        if (!ErrorObject.isLegal(responseMode)) {
+            var errorMessage = ("Illegal char(s) in response mode");
+            logErrorInProdElseWarn(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+        }
+
         if (!responseMode.equals(ResponseMode.QUERY.getValue())
                 && !responseMode.equals(ResponseMode.FRAGMENT.getValue())) {
             var errorMessage =
