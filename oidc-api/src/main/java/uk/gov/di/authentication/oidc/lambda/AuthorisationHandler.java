@@ -295,7 +295,7 @@ public class AuthorisationHandler
                 LOG.info("Validating request object");
                 authRequestError = requestObjectAuthorizeValidator.validate(authRequest);
             }
-        } catch (InvalidAuthorizeRequestException e) {
+        } catch (IllegalArgumentException | InvalidAuthorizeRequestException e) {
             return generateBadRequestResponse(user, e.getMessage(), client.getClientID());
         } catch (ClientSignatureValidationException e) {
             return generateApiGatewayProxyResponse(
