@@ -818,6 +818,20 @@ class QueryParamsAuthorizeValidatorTest {
     }
 
     @Test
+    void validatorThrowsIllegalArgumentExceptionForInjectionAttacksInResponseMode() {
+        AuthenticationRequest.Builder authRequestBuilder =
+                new AuthenticationRequest.Builder(
+                                VALID_RESPONSE_TYPE, VALID_SCOPES, CLIENT_ID, REDIRECT_URI)
+                        .state(STATE)
+                        .nonce(NONCE)
+                        .responseMode(new ResponseMode("code\ninjectedcode"));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> queryParamsAuthorizeValidator.validate(authRequestBuilder.build()));
+    }
+
+    @Test
     void shouldThrowWhenResponseModeIsInvalidBeforeValidatingARedirectingError() {
         // No state is an error we redirect back to the RP with an error message with
         AuthenticationRequest.Builder authRequestBuilder =
