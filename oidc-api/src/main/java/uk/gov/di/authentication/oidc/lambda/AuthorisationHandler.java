@@ -305,6 +305,17 @@ public class AuthorisationHandler
                     SERVER_ERROR.getHTTPStatusCode(), SERVER_ERROR.getDescription());
         }
 
+        if (authRequestError.isPresent()) {
+            return generateErrorResponse(
+                    authRequestError.get().redirectURI(),
+                    authRequestError.get().state(),
+                    authRequest.getResponseMode(),
+                    authRequestError.get().errorObject(),
+                    authRequest.getClientID().getValue(),
+                    user);
+        }
+        authRequest = RequestObjectToAuthRequestHelper.transform(authRequest);
+
         if (!client.isActive()) {
             LOG.error("Client configured as not active in Client Registry");
             return generateErrorResponse(
@@ -334,29 +345,19 @@ public class AuthorisationHandler
         if (rateLimitDecision.hasExceededRateLimit()) {
             switch (rateLimitDecision.getAction()) {
                 case RETURN_TO_RP -> {
-                    authRequestError =
-                            Optional.of(
-                                    new AuthRequestError(
-                                            OAuth2Error.TEMPORARILY_UNAVAILABLE,
-                                            authRequest.getRedirectionURI(),
-                                            authRequest.getState()));
+                    return generateErrorResponse(
+                            authRequest.getRedirectionURI(),
+                            authRequest.getState(),
+                            authRequest.getResponseMode(),
+                            OAuth2Error.TEMPORARILY_UNAVAILABLE,
+                            authRequest.getClientID().getValue(),
+                            user);
                 }
                 case NONE -> {
                     // continue
                 }
             }
         }
-
-        if (authRequestError.isPresent()) {
-            return generateErrorResponse(
-                    authRequestError.get().redirectURI(),
-                    authRequestError.get().state(),
-                    authRequest.getResponseMode(),
-                    authRequestError.get().errorObject(),
-                    authRequest.getClientID().getValue(),
-                    user);
-        }
-        authRequest = RequestObjectToAuthRequestHelper.transform(authRequest);
 
         try {
             metrics.emit(

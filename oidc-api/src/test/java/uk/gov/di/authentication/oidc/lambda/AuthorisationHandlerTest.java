@@ -2146,6 +2146,143 @@ class AuthorisationHandlerTest {
                     response.getHeaders().get(ResponseHeaders.LOCATION));
         }
 
+        @Test
+        void shouldRedirectToJarRedirectUriWhenClientIsNotActiveAndRequestObjectIsPresent()
+                throws Exception {
+            var jarRedirectUri = "https://jar-redirect.example.com";
+            when(clientService.getClient(CLIENT_ID.toString()))
+                    .thenReturn(
+                            Optional.of(
+                                    generateClientRegistry()
+                                            .withActive(false)
+                                            .withRedirectUrls(
+                                                    List.of(REDIRECT_URI, jarRedirectUri))));
+            when(requestObjectAuthorizeValidator.validate(any(AuthenticationRequest.class)))
+                    .thenReturn(Optional.empty());
+
+            var jwtClaimsSet =
+                    jwtClaimsSetBuilder("https://localhost/authorize", null, null)
+                            .claim("redirect_uri", jarRedirectUri)
+                            .build();
+            var event =
+                    withRequestEvent(
+                            Map.of(
+                                    "client_id",
+                                    CLIENT_ID.getValue(),
+                                    "scope",
+                                    SCOPE,
+                                    "redirect_uri",
+                                    REDIRECT_URI,
+                                    "response_type",
+                                    "code",
+                                    "request",
+                                    generateSignedJWT(jwtClaimsSet, RSA_KEY_PAIR).serialize()));
+
+            var response = makeHandlerRequest(event);
+
+            assertThat(response, hasStatus(302));
+            assertThat(
+                    logging.events(),
+                    hasItem(withMessage("Client configured as not active in Client Registry")));
+            assertThat(
+                    response.getHeaders().get(ResponseHeaders.LOCATION),
+                    equalTo(
+                            jarRedirectUri
+                                    + "?error=unauthorized_client&error_description=client+deactivated&state="
+                                    + STATE.getValue()));
+        }
+
+        @Test
+        void shouldRedirectToJarRedirectUriWhenClientIsDeprecatedAndRequestObjectIsPresent()
+                throws Exception {
+            var jarRedirectUri = "https://jar-redirect.example.com";
+            when(clientService.getClient(CLIENT_ID.toString()))
+                    .thenReturn(
+                            Optional.of(
+                                    generateClientRegistry()
+                                            .withDeprecated(true)
+                                            .withRedirectUrls(
+                                                    List.of(REDIRECT_URI, jarRedirectUri))));
+            when(requestObjectAuthorizeValidator.validate(any(AuthenticationRequest.class)))
+                    .thenReturn(Optional.empty());
+
+            var jwtClaimsSet =
+                    jwtClaimsSetBuilder("https://localhost/authorize", null, null)
+                            .claim("redirect_uri", jarRedirectUri)
+                            .build();
+            var event =
+                    withRequestEvent(
+                            Map.of(
+                                    "client_id",
+                                    CLIENT_ID.getValue(),
+                                    "scope",
+                                    SCOPE,
+                                    "redirect_uri",
+                                    REDIRECT_URI,
+                                    "response_type",
+                                    "code",
+                                    "request",
+                                    generateSignedJWT(jwtClaimsSet, RSA_KEY_PAIR).serialize()));
+
+            var response = makeHandlerRequest(event);
+
+            assertThat(response, hasStatus(302));
+            assertThat(
+                    logging.events(),
+                    hasItem(withMessage("Client configured as deprecated in Client Registry")));
+            assertThat(
+                    response.getHeaders().get(ResponseHeaders.LOCATION),
+                    equalTo(
+                            jarRedirectUri
+                                    + "?error=unauthorized_client&error_description=client+deprecated&state="
+                                    + STATE.getValue()));
+        }
+
+        @Test
+        void shouldRedirectToJarRedirectUriWhenClientIsRateLimitedAndRequestObjectIsPresent()
+                throws Exception {
+            var jarRedirectUri = "https://jar-redirect.example.com";
+            when(clientService.getClient(CLIENT_ID.toString()))
+                    .thenReturn(
+                            Optional.of(
+                                    generateClientRegistry()
+                                            .withRedirectUrls(
+                                                    List.of(REDIRECT_URI, jarRedirectUri))));
+            when(requestObjectAuthorizeValidator.validate(any(AuthenticationRequest.class)))
+                    .thenReturn(Optional.empty());
+            when(rateLimitService.getClientRateLimitDecision(any(ClientRateLimitConfig.class)))
+                    .thenReturn(RateLimitDecision.OVER_LIMIT_RETURN_TO_RP);
+
+            var jwtClaimsSet =
+                    jwtClaimsSetBuilder("https://localhost/authorize", null, null)
+                            .claim("redirect_uri", jarRedirectUri)
+                            .build();
+            var event =
+                    withRequestEvent(
+                            Map.of(
+                                    "client_id",
+                                    CLIENT_ID.getValue(),
+                                    "scope",
+                                    SCOPE,
+                                    "redirect_uri",
+                                    REDIRECT_URI,
+                                    "response_type",
+                                    "code",
+                                    "state",
+                                    STATE.getValue(),
+                                    "request",
+                                    generateSignedJWT(jwtClaimsSet, RSA_KEY_PAIR).serialize()));
+
+            var response = makeHandlerRequest(event);
+
+            assertThat(response, hasStatus(302));
+            assertEquals(
+                    jarRedirectUri
+                            + "?error=temporarily_unavailable&error_description=The+authorization+server+is+temporarily+unavailable&state="
+                            + STATE.getValue(),
+                    response.getHeaders().get(ResponseHeaders.LOCATION));
+        }
+
         private static Stream<ErrorObject> expectedErrorObjects() {
             return Stream.of(
                     OAuth2Error.UNSUPPORTED_RESPONSE_TYPE,
