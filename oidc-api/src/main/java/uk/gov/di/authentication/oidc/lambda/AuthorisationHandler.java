@@ -295,7 +295,7 @@ public class AuthorisationHandler
                 LOG.info("Validating request object");
                 authRequestError = requestObjectAuthorizeValidator.validate(authRequest);
             }
-        } catch (IllegalArgumentException | InvalidAuthorizeRequestException e) {
+        } catch (InvalidAuthorizeRequestException e) {
             return generateBadRequestResponse(user, e.getMessage(), client.getClientID());
         } catch (ClientSignatureValidationException e) {
             return generateApiGatewayProxyResponse(
@@ -303,6 +303,15 @@ public class AuthorisationHandler
         } catch (JwksException e) {
             return generateApiGatewayProxyResponse(
                     SERVER_ERROR.getHTTPStatusCode(), SERVER_ERROR.getDescription());
+        }
+        if (authRequestError.isPresent()
+                && authRequestError
+                        .get()
+                        .errorObject()
+                        .getDescription()
+                        .contains("response mode")) {
+            var errorMessage = authRequestError.get().errorObject().getDescription();
+            return generateBadRequestResponse(user, errorMessage, client.getClientID());
         }
 
         if (authRequestError.isPresent()) {

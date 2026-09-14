@@ -55,7 +55,11 @@ public class QueryParamsAuthorizeValidator extends BaseAuthorizeValidator {
 
         var responseMode = authRequest.getResponseMode();
         if (responseMode != null) {
-            validateResponseMode(responseMode.getValue());
+            var responseModeError = validateResponseMode(responseMode.getValue());
+            if (responseModeError.isPresent()) {
+                return Optional.of(
+                        new AuthRequestError(responseModeError.get(), redirectURI, null));
+            }
         }
 
         if (authRequest.getState() == null) {
