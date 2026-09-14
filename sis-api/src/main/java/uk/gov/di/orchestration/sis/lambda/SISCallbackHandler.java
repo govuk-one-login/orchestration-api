@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.nimbusds.oauth2.sdk.ErrorObject;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.TokenResponse;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,6 +20,7 @@ import uk.gov.di.orchestration.identity.entity.IdentityContext;
 import uk.gov.di.orchestration.identity.exceptions.IdentityCallbackException;
 import uk.gov.di.orchestration.identity.helpers.IdentityCallbackHelper;
 import uk.gov.di.orchestration.identity.service.IdentityContextService;
+import uk.gov.di.orchestration.shared.entity.ResponseHeaders;
 import uk.gov.di.orchestration.shared.entity.VectorOfTrust;
 import uk.gov.di.orchestration.shared.exceptions.NoSessionException;
 import uk.gov.di.orchestration.shared.helpers.IpAddressHelper;
@@ -27,12 +29,16 @@ import uk.gov.di.orchestration.shared.oauth.OAuthService;
 import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.EndOfJourneyService;
+import uk.gov.di.orchestration.sis.exception.SISCallbackTokenException;
 import uk.gov.di.orchestration.sis.exception.SISCallbackValidationError;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.nimbusds.oauth2.sdk.OAuth2Error.ACCESS_DENIED_CODE;
+import static java.lang.String.format;
+import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
 import static uk.gov.di.orchestration.shared.helpers.AuditHelper.attachTxmaAuditFieldFromHeaders;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.AWS_REQUEST_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.CLIENT_ID;
@@ -40,7 +46,9 @@ import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachIpAddre
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachLogFieldToLogs;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachTraceId;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED;
 import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_UNSUCCESSFUL_TOKEN_RESPONSE_RECEIVED;
 
 public class SISCallbackHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -133,6 +141,11 @@ public class SISCallbackHandler
             }
             auditService.submitAuditEventNoPrefix(
                     ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED, clientId, user);
+
+            var authCode = input.getQueryStringParameters().get("code");
+            var tokenResponse = makeTokenRequest(authCode, clientId, user);
+            auditService.submitAuditEventNoPrefix(
+                    ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED, clientId, user);
         } catch (IdentityCallbackException e) {
             return identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(e);
         } catch (NoSessionException e) {
@@ -140,8 +153,30 @@ public class SISCallbackHandler
         } catch (ParseException e) {
             return identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(
                     new Error("Cannot retrieve auth request params from client session id"));
+        } catch (SISCallbackTokenException e) {
+            return generateApiGatewayProxyResponse(
+                    302,
+                    "",
+                    Map.of(
+                            ResponseHeaders.LOCATION,
+                            configurationService.getSISErrorUrl().toString()),
+                    null);
         }
         return null;
+    }
+
+    private TokenResponse makeTokenRequest(String authCode, String clientId, TxmaAuditUser user)
+            throws SISCallbackTokenException {
+        var tokenResponse = sisAuthorisationService.getToken(authCode);
+        if (!tokenResponse.indicatesSuccess()) {
+            auditService.submitAuditEventNoPrefix(
+                    ORCH_SIS_UNSUCCESSFUL_TOKEN_RESPONSE_RECEIVED, clientId, user);
+            throw new SISCallbackTokenException(
+                    format(
+                            "SIS TokenResponse was not successful: %s",
+                            tokenResponse.toErrorResponse().toJSONObject()));
+        }
+        return tokenResponse;
     }
 
     private IdentityContextResponse getIdentityContext(APIGatewayProxyRequestEvent input)
