@@ -124,6 +124,11 @@ public class RequestObjectAuthorizeValidator extends BaseAuthorizeValidator {
 
             if (Objects.nonNull(responseMode)) {
                 validateResponseMode(responseMode);
+                // var responseModeError = validateResponseModeField(responseMode);
+                // if (responseModeError.isPresent()) {
+                //     return Optional.of(
+                //             new AuthRequestError(responseModeError.get(), redirectURI, null));
+                // }
             }
 
             if (Objects.isNull(jwtClaimsSet.getClaim("state"))) {
