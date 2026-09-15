@@ -290,6 +290,7 @@ class AuthenticationAuthorizationServiceTest {
             assertThat(
                     claimsSet.getClaim("previous_govuk_signin_journey_id"),
                     equalTo(PREVIOUS_CLIENT_SESSION_ID));
+            assertThat(claimsSet.getClaim("prompt"), equalTo("login"));
 
             var actualUserinfo =
                     SerializationService.getInstance()
@@ -544,6 +545,12 @@ class AuthenticationAuthorizationServiceTest {
                     orchSession);
 
             verify(authFrontend).authorizeURI(Optional.of(Prompt.Type.LOGIN), Optional.empty());
+
+            var claimsSetCaptor = ArgumentCaptor.forClass(JWTClaimsSet.class);
+            verify(orchestrationAuthorizationService)
+                    .getSignedAndEncryptedJWT(claimsSetCaptor.capture());
+            var claimsSet = claimsSetCaptor.getValue();
+            assertThat(claimsSet.getClaim("prompt"), equalTo("login"));
         }
 
         @Test
@@ -643,6 +650,7 @@ class AuthenticationAuthorizationServiceTest {
             var claimsSet = claimsSetCaptor.getValue();
             assertNull(claimsSet.getClaim("reauthenticate"));
             assertNull(claimsSet.getClaim("previous_govuk_signin_journey_id"));
+            assertNull(claimsSet.getClaim("prompt"));
         }
 
         private void assertRequiredUserInfoClaimsAreSet(Map<String, String> actualUserInfoClaims) {

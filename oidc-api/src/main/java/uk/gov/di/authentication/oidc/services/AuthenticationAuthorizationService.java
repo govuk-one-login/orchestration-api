@@ -282,6 +282,14 @@ public class AuthenticationAuthorizationService {
                         .claim("redirect_uri", configurationService.getOrchestrationRedirectURI())
                         .claim("reauthenticate", reauthSub)
                         .claim("previous_govuk_signin_journey_id", reauthSid)
+                        .claim(
+                                "prompt",
+                                Objects.nonNull(authenticationRequest.getPrompt())
+                                                && authenticationRequest
+                                                        .getPrompt()
+                                                        .contains(Prompt.Type.LOGIN)
+                                        ? String.valueOf(Prompt.Type.LOGIN)
+                                        : null)
                         .claim("channel", channel)
                         .claim("authenticated", orchSession.getAuthenticated())
                         .claim("scope", authenticationRequest.getScope().toString())
