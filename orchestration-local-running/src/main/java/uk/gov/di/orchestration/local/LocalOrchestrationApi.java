@@ -20,6 +20,8 @@ import uk.gov.di.authentication.oidc.lambda.TrustMarkHandler;
 import uk.gov.di.authentication.oidc.lambda.UserInfoHandler;
 import uk.gov.di.authentication.oidc.lambda.WellknownHandler;
 import uk.gov.di.orchestration.local.handlers.SqsPoller;
+import uk.gov.di.orchestration.sis.lambda.SISCallbackHandler;
+import uk.gov.di.orchestration.sis.lambda.SISJwksHandler;
 
 import static uk.gov.di.orchestration.local.handlers.ApiGatewayLambdaHandler.handlerFor;
 
@@ -63,6 +65,12 @@ public class LocalOrchestrationApi {
                                     "/.well-known/ipv-jwks.json", handlerFor(new IpvJwksHandler()));
                             config.routes.get(
                                     "/ipv-callback", handlerFor(new IPVCallbackHandler()));
+
+                            // SIS API
+                            config.routes.get(
+                                    "/.well-known/sis-jwks.json", handlerFor(new SISJwksHandler()));
+                            config.routes.get(
+                                    "/sis-callback", handlerFor(new SISCallbackHandler()));
 
                             // Doc checking app API
                             config.routes.get(
