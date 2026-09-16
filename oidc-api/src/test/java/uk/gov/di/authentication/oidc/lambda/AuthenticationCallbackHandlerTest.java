@@ -149,6 +149,7 @@ class AuthenticationCallbackHandlerTest {
             mock(ConfigurationService.class);
     private static final AuthenticationAuthorizationService authorizationService =
             mock(AuthenticationAuthorizationService.class);
+    public static final String IP_ADDRESS = "123.123.123.123";
     private final AuthenticationTokenService tokenService = mock(AuthenticationTokenService.class);
     private final OrchAccessTokenService orchAccessTokenService =
             mock(OrchAccessTokenService.class);
@@ -192,6 +193,7 @@ class AuthenticationCallbackHandlerTest {
     private static final String CLIENT_SESSION_ID = "a-client-session-id";
     private static final ClientID CLIENT_ID = new ClientID();
     private static final String CLIENT_NAME = "client-name";
+    private static final String LANDING_PAGE_URL = "http://landing-page";
     private static final String TEST_INTERNAL_COMMON_SUBJECT_ID = "internal-common-subject-id";
     private static final Subject RP_PAIRWISE_ID = new Subject();
     private static final Subject PUBLIC_SUBJECT_ID = new Subject();
@@ -199,16 +201,26 @@ class AuthenticationCallbackHandlerTest {
     private static final State RP_STATE = new State();
     private static final Nonce RP_NONCE = new Nonce();
     private static final String ORCH_CLIENT_ID = "orch-client-id";
-    private static final CredentialTrustLevel lowestCredentialTrustLevel =
-            CredentialTrustLevel.LOW_LEVEL;
+    private static final AuthenticationRequest AUTH_REQUEST =
+            generateRPAuthRequestForClientSession();
     private static final OrchClientSessionItem orchClientSession =
             new OrchClientSessionItem(
                     CLIENT_SESSION_ID,
-                    generateRPAuthRequestForClientSession().toParameters(),
+                    AUTH_REQUEST.toParameters(),
                     null,
                     List.of(
                             VectorOfTrust.of(
-                                    lowestCredentialTrustLevel, LevelOfConfidence.LOW_LEVEL)),
+                                    CredentialTrustLevel.LOW_LEVEL, LevelOfConfidence.LOW_LEVEL)),
+                    CLIENT_NAME);
+    private static final OrchClientSessionItem identityClientSession =
+            new OrchClientSessionItem(
+                    CLIENT_SESSION_ID,
+                    AUTH_REQUEST.toParameters(),
+                    null,
+                    List.of(
+                            VectorOfTrust.of(
+                                    CredentialTrustLevel.MEDIUM_LEVEL,
+                                    LevelOfConfidence.MEDIUM_LEVEL)),
                     CLIENT_NAME);
     private static final String COOKIE_HEADER_NAME = "Cookie";
     private static final AuthorizationCode AUTH_CODE_ORCH_TO_AUTH = new AuthorizationCode();
@@ -359,7 +371,7 @@ class AuthenticationCallbackHandlerTest {
                                         .withSessionId(SESSION_ID)
                                         .withPersistentSessionId(PERSISTENT_SESSION_ID)
                                         .withGovukSigninJourneyId(CLIENT_SESSION_ID)
-                                        .withIpAddress("123.123.123.123")
+                                        .withIpAddress(IP_ADDRESS)
                                         .withUserId(TEST_INTERNAL_COMMON_SUBJECT_ID)
                                         .withEmail(TEST_EMAIL_ADDRESS)
                                         .withPhone("1234")),
@@ -949,11 +961,13 @@ class AuthenticationCallbackHandlerTest {
 
         @Nested
         class IdentityJourney {
-
             @BeforeEach
             void setup() {
                 when(IdentityHelper.identityRequired(anyMap(), anyBoolean(), anyBoolean()))
                         .thenReturn(true);
+                when(configurationService.isSisEnabled()).thenReturn(false);
+                when(orchClientSessionService.getClientSession(CLIENT_SESSION_ID))
+                        .thenReturn(Optional.of(identityClientSession));
             }
 
             @Test
@@ -979,7 +993,7 @@ class AuthenticationCallbackHandlerTest {
                                 eq(reproveIdentity),
                                 any(),
                                 eq(false));
-                verifyNoInteractions(logoutService);
+                verifyNoInteractions(logoutService, sisAuthorisationService);
                 verify(orchSessionService, times(2))
                         .updateSession(argThat(OrchSessionItem::getAuthenticated));
 
@@ -1002,7 +1016,7 @@ class AuthenticationCallbackHandlerTest {
                                 event,
                                 CLIENT_ID.getValue(),
                                 intervention);
-                verifyNoInteractions(initiateIPVAuthorisationService);
+                verifyNoInteractions(initiateIPVAuthorisationService, sisAuthorisationService);
                 verify(orchSessionService, times(2))
                         .updateSession(argThat(OrchSessionItem::getAuthenticated));
 
@@ -1032,7 +1046,7 @@ class AuthenticationCallbackHandlerTest {
                                 eq(reproveIdentity),
                                 any(),
                                 eq(false));
-                verifyNoInteractions(logoutService);
+                verifyNoInteractions(logoutService, sisAuthorisationService);
                 verify(orchSessionService, times(2))
                         .updateSession(argThat(OrchSessionItem::getAuthenticated));
 
@@ -1055,7 +1069,7 @@ class AuthenticationCallbackHandlerTest {
                                 event,
                                 CLIENT_ID.toString(),
                                 intervention);
-                verifyNoInteractions(initiateIPVAuthorisationService);
+                verifyNoInteractions(initiateIPVAuthorisationService, sisAuthorisationService);
                 verify(orchSessionService, times(2))
                         .updateSession(argThat(OrchSessionItem::getAuthenticated));
 
@@ -1085,7 +1099,7 @@ class AuthenticationCallbackHandlerTest {
                                 eq(reproveIdentity),
                                 any(),
                                 eq(false));
-                verifyNoInteractions(logoutService);
+                verifyNoInteractions(logoutService, sisAuthorisationService);
                 verify(orchSessionService, times(2))
                         .updateSession(argThat(OrchSessionItem::getAuthenticated));
 
@@ -1108,7 +1122,39 @@ class AuthenticationCallbackHandlerTest {
                                 event,
                                 CLIENT_ID.toString(),
                                 intervention);
+                verifyNoInteractions(initiateIPVAuthorisationService, sisAuthorisationService);
+
+                assertNoAuthorisationCodeGeneratedAndSaved();
+            }
+
+            @Test
+            void shouldRedirectToSISWhenThereIsNoInterventionAndFeatureFlagEnabled() {
+                when(configurationService.isSisEnabled()).thenReturn(true);
+                boolean reproveIdentity = false;
+                setUpIntervention(false, false, reproveIdentity, false);
+
+                var event = new APIGatewayProxyRequestEvent();
+                setValidHeadersAndQueryParameters(event);
+
+                handler.handleRequest(event, CONTEXT);
+
+                verify(sisAuthorisationService)
+                        .sendRequest(
+                                eqAuthRequest(AUTH_REQUEST),
+                                eq(USER_INFO),
+                                eq(CLIENT_ID.getValue()),
+                                eq(SESSION_ID),
+                                eq(CLIENT_SESSION_ID),
+                                eq(false),
+                                eq(List.of(LevelOfConfidence.MEDIUM_LEVEL.getValue())),
+                                eq(IP_ADDRESS),
+                                eq(PERSISTENT_SESSION_ID),
+                                eq(LANDING_PAGE_URL));
+
+                verifyNoInteractions(logoutService);
                 verifyNoInteractions(initiateIPVAuthorisationService);
+                verify(orchSessionService, times(2))
+                        .updateSession(argThat(OrchSessionItem::getAuthenticated));
 
                 assertNoAuthorisationCodeGeneratedAndSaved();
             }
@@ -1454,7 +1500,7 @@ class AuthenticationCallbackHandlerTest {
                             null,
                             List.of(
                                     VectorOfTrust.of(
-                                            lowestCredentialTrustLevel,
+                                            CredentialTrustLevel.LOW_LEVEL,
                                             LevelOfConfidence.LOW_LEVEL)),
                             CLIENT_NAME);
             when(orchClientSessionService.getClientSession(CLIENT_SESSION_ID))
@@ -1507,7 +1553,8 @@ class AuthenticationCallbackHandlerTest {
                 .withContacts(singletonList("contant-name"))
                 .withPostLogoutRedirectUrls(singletonList("localhost/logout"))
                 .withClientType(ClientType.WEB.getValue())
-                .withClaims(List.of("claim"));
+                .withClaims(List.of("claim"))
+                .withLandingPageUrl(LANDING_PAGE_URL);
     }
 
     private static AuthenticationRequest generateRPAuthRequestForClientSession() {
@@ -1620,5 +1667,14 @@ class AuthenticationCallbackHandlerTest {
                 orchClientSessionCaptor
                         .getValue()
                         .getCorrectPairwiseIdGivenSubjectType(SubjectType.PUBLIC.toString()));
+    }
+
+    private static AuthenticationRequest eqAuthRequest(AuthenticationRequest expectedAuthRequest) {
+        return argThat(
+                actualAuthRequest ->
+                        actualAuthRequest != null
+                                && expectedAuthRequest
+                                        .toParameters()
+                                        .equals(actualAuthRequest.toParameters()));
     }
 }
