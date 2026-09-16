@@ -101,6 +101,7 @@ import static uk.gov.di.orchestration.sharedtest.helper.AuditAssertionsHelper.as
 import static uk.gov.di.orchestration.sharedtest.helper.JsonArrayHelper.jsonArrayOf;
 import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyResponseEventMatcher.hasStatus;
 import static uk.gov.di.orchestration.sharedtest.utils.KeyPairUtils.generateRsaKeyPair;
+import static uk.gov.di.orchestration.sis.domain.SISAuditableEvent.ORCH_SIS_AUTHORISATION_REQUESTED;
 import static uk.gov.di.orchestration.testsupport.helpers.OrchAuthCodeAssertionHelper.assertOrchAuthCodeSaved;
 
 public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHandlerIntegrationTest {
@@ -144,6 +145,7 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
     public static final StateStorageExtension stateStorageExtension = new StateStorageExtension();
 
     @RegisterExtension public static final JwksExtension ipvJwksExtension = new JwksExtension();
+    @RegisterExtension public static final JwksExtension sisJwksExtension = new JwksExtension();
 
     @RegisterExtension
     public static final JwksCacheExtension jwksCacheExtension = new JwksCacheExtension();
@@ -159,20 +161,30 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
     private static final URI REDIRECT_URI = URI.create("http://localhost/redirect");
     private static final Subject SUBJECT_ID = new Subject();
     private static final String IPV_CLIENT_ID = "ipv-client-id";
+    private static final String IPV_AUTHORISATION_URI = "https://ipv.gov.uk/authorize";
+    private static final String SIS_CLIENT_ID = "sis-client-id";
+    private static final String SIS_AUTHORISATION_URI = "https://sis.gov.uk/authorize";
     private static final String TEST_EMAIL_ADDRESS = "joe.bloggs@digital.cabinet-office.gov.uk";
-    private static final KeyPair keyPair = generateRsaKeyPair();
+    private static final KeyPair ipvKeyPair = generateRsaKeyPair();
+    private static final KeyPair sisKeyPair = generateRsaKeyPair();
 
     @BeforeAll
     static void beforeAll() {
         configurationService =
                 new TestConfigurationService(
                         authExternalApiStub, accountInterventionApiStub, false);
-        var rsaKey =
-                new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
+        var ipvRsaKey =
+                new RSAKey.Builder((RSAPublicKey) ipvKeyPair.getPublic())
                         .keyUse(KeyUse.ENCRYPTION)
-                        .keyID("test-key-id")
+                        .keyID("ipv-test-key-id")
                         .build();
-        ipvJwksExtension.init(new JWKSet(rsaKey));
+        ipvJwksExtension.init(new JWKSet(ipvRsaKey));
+        var sisRsaKey =
+                new RSAKey.Builder((RSAPublicKey) sisKeyPair.getPublic())
+                        .keyUse(KeyUse.ENCRYPTION)
+                        .keyID("sis-test-key-id")
+                        .build();
+        sisJwksExtension.init(new JWKSet(sisRsaKey));
     }
 
     @BeforeEach()
@@ -341,7 +353,24 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
 
         assertRedirectToIpv(response, false);
         assertOrchSessionIsUpdatedWithUserInfoClaims();
-        assertInformationStoredForNoSessionService(response);
+        assertInformationStoredForNoSessionService(response, true);
+    }
+
+    @Test
+    void shouldRedirectToSISWhenIdentityRequiredAndSISFeatureFlagEnabled()
+            throws ParseException, JOSEException, java.text.ParseException {
+        setupTestWithSISEnabled();
+        setupClientRegByClientIdAndByIdentityVerificationSupported(CLIENT_ID, true);
+        var response =
+                makeRequest(
+                        Optional.empty(),
+                        constructHeaders(
+                                Optional.of(buildSessionCookie(SESSION_ID, CLIENT_SESSION_ID))),
+                        constructQueryStringParameters());
+
+        assertRedirectToSIS(response);
+        assertOrchSessionIsUpdatedWithUserInfoClaims();
+        assertInformationStoredForNoSessionService(response, false);
     }
 
     @Test
@@ -933,9 +962,9 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
 
     private void assertRedirectToIpv(APIGatewayProxyResponseEvent response, boolean reproveIdentity)
             throws java.text.ParseException, JOSEException, ParseException {
-        var signedJWTResponse = validateAndDecryptRequestObject(response);
+        var signedJWTResponse = validateAndDecryptIPVRequestObject(response);
 
-        validateClaimsInJar(signedJWTResponse, reproveIdentity);
+        validateClaimsInJar(signedJWTResponse, reproveIdentity, true);
 
         assertTxmaAuditEventsReceived(
                 txmaAuditQueue,
@@ -948,17 +977,47 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
                         IPVAuditableEvent.IPV_AUTHORISATION_REQUESTED));
     }
 
-    private SignedJWT validateAndDecryptRequestObject(APIGatewayProxyResponseEvent response)
-            throws ParseException, JOSEException {
-        var authRequest = validateQueryRequestToIPVAndReturnAuthRequest(response);
+    private void assertRedirectToSIS(APIGatewayProxyResponseEvent response)
+            throws java.text.ParseException, JOSEException, ParseException {
+        var signedJWTResponse = validateAndDecryptSISRequestObject(response);
 
-        var encryptedRequestObject = authRequest.getRequestObject();
-        return decryptJWT((EncryptedJWT) encryptedRequestObject);
+        validateClaimsInJar(signedJWTResponse, false, false);
+
+        assertTxmaAuditEventsReceived(
+                txmaAuditQueue,
+                List.of(
+                        OrchestrationAuditableEvent.AUTH_CALLBACK_RESPONSE_RECEIVED,
+                        AccountInterventionsAuditableEvent.AIS_RESPONSE_RECEIVED,
+                        OrchestrationAuditableEvent.AUTH_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
+                        OrchestrationAuditableEvent.AUTH_SUCCESSFUL_USERINFO_RESPONSE_RECEIVED,
+                        OidcAuditableEvent.AUTHENTICATION_COMPLETE),
+                List.of(ORCH_SIS_AUTHORISATION_REQUESTED));
     }
 
-    private void assertInformationStoredForNoSessionService(APIGatewayProxyResponseEvent response)
+    private SignedJWT validateAndDecryptIPVRequestObject(APIGatewayProxyResponseEvent response)
+            throws ParseException, JOSEException {
+        return validateAndDecryptRequestObject(response, true);
+    }
+
+    private SignedJWT validateAndDecryptSISRequestObject(APIGatewayProxyResponseEvent response)
+            throws ParseException, JOSEException {
+        return validateAndDecryptRequestObject(response, false);
+    }
+
+    private SignedJWT validateAndDecryptRequestObject(
+            APIGatewayProxyResponseEvent response, boolean isIpvRequest)
+            throws ParseException, JOSEException {
+        var authRequest =
+                validateQueryRequestToIdentityAndReturnAuthRequest(response, isIpvRequest);
+
+        var encryptedRequestObject = authRequest.getRequestObject();
+        return decryptJWT((EncryptedJWT) encryptedRequestObject, isIpvRequest);
+    }
+
+    private void assertInformationStoredForNoSessionService(
+            APIGatewayProxyResponseEvent response, boolean isIpvRequest)
             throws java.text.ParseException, ParseException, JOSEException {
-        var requestObject = validateAndDecryptRequestObject(response);
+        var requestObject = validateAndDecryptRequestObject(response, isIpvRequest);
         var stateString = requestObject.getJWTClaimsSet().getStringClaim("state");
         var state = new State(stateString);
         var clientSessionIdFromDynamo =
@@ -1045,6 +1104,15 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
         setupTest(true);
     }
 
+    private void setupTestWithSISEnabled() {
+        configurationService =
+                new TestConfigurationService(
+                        authExternalApiStub, accountInterventionApiStub, false, true);
+        handler = new AuthenticationCallbackHandler(configurationService);
+        authExternalApiStub.init(SUBJECT_ID);
+        txmaAuditQueue.clear();
+    }
+
     private void setupTest(boolean abortOnAisErrorResponse) {
         configurationService =
                 new TestConfigurationService(
@@ -1072,20 +1140,34 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
         return queryStringParameters;
     }
 
-    protected static class TestConfigurationService extends IntegrationTestConfigurationService {
+    private static class TestConfigurationService extends IntegrationTestConfigurationService {
 
         private final AuthExternalApiStubExtension authExternalApiStub;
         private final AccountInterventionsStubExtension accountInterventionApiStub;
         private final boolean abortOnAisErrorResponse;
+        private final boolean isSisEnabled;
 
         public TestConfigurationService(
                 AuthExternalApiStubExtension authExternalApiStub,
                 AccountInterventionsStubExtension accountInterventionsStubExtension,
                 boolean abortOnAisErrorResponse) {
+            this(
+                    authExternalApiStub,
+                    accountInterventionsStubExtension,
+                    abortOnAisErrorResponse,
+                    false);
+        }
+
+        public TestConfigurationService(
+                AuthExternalApiStubExtension authExternalApiStub,
+                AccountInterventionsStubExtension accountInterventionsStubExtension,
+                boolean abortOnAisErrorResponse,
+                boolean isSisEnabled) {
             super();
             this.authExternalApiStub = authExternalApiStub;
             this.accountInterventionApiStub = accountInterventionsStubExtension;
             this.abortOnAisErrorResponse = abortOnAisErrorResponse;
+            this.isSisEnabled = isSisEnabled;
         }
 
         @Override
@@ -1122,13 +1204,28 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
         }
 
         @Override
+        public boolean isSisEnabled() {
+            return isSisEnabled;
+        }
+
+        @Override
         public URI getIPVAuthorisationURI() {
-            return URI.create("https://ipv.gov.uk/authorize");
+            return URI.create(IPV_AUTHORISATION_URI);
         }
 
         @Override
         public String getIPVAuthorisationClientId() {
             return IPV_CLIENT_ID;
+        }
+
+        @Override
+        public URI getSISAuthorisationURI() {
+            return URI.create(SIS_AUTHORISATION_URI);
+        }
+
+        @Override
+        public String getSISAuthorisationClientId() {
+            return SIS_CLIENT_ID;
         }
 
         @Override
@@ -1177,6 +1274,15 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
                 throw new RuntimeException(e);
             }
         }
+
+        @Override
+        public URL getSISJwksUrl() {
+            try {
+                return sisJwksExtension.getJwksUrl();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public void setupClientSessionWithId(
@@ -1214,31 +1320,36 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
         setupClientSessionWithId(CLIENT_SESSION_ID, CLIENT_ID, null);
     }
 
-    private AuthorizationRequest validateQueryRequestToIPVAndReturnAuthRequest(
-            APIGatewayProxyResponseEvent response) throws ParseException {
+    private AuthorizationRequest validateQueryRequestToIdentityAndReturnAuthRequest(
+            APIGatewayProxyResponseEvent response, boolean isIpvRequest) throws ParseException {
+        var clientId = (isIpvRequest ? IPV_CLIENT_ID : SIS_CLIENT_ID);
+        var authorisationUri = (isIpvRequest ? IPV_AUTHORISATION_URI : SIS_AUTHORISATION_URI);
         assertThat(response, hasStatus(302));
-        var expectedQueryStringRegex = "response_type=code&request=.*&client_id=ipv-client-id";
+        var expectedQueryStringRegex = "response_type=code&request=.*&client_id=" + clientId;
         URI redirectLocationHeader =
                 URI.create(response.getHeaders().get(ResponseHeaders.LOCATION));
-        assertThat(
-                redirectLocationHeader.toString(),
-                startsWith(configurationService.getIPVAuthorisationURI().toString()));
+        assertThat(redirectLocationHeader.toString(), startsWith(authorisationUri));
         assertThat(redirectLocationHeader.getQuery(), matchesPattern(expectedQueryStringRegex));
 
         var authorisationRequest = AuthorizationRequest.parse(redirectLocationHeader);
-        assertThat(authorisationRequest.getClientID().getValue(), equalTo(IPV_CLIENT_ID));
+        assertThat(authorisationRequest.getClientID().getValue(), equalTo(clientId));
         assertThat(authorisationRequest.getResponseType(), equalTo(ResponseType.CODE));
         assertTrue(Objects.nonNull(authorisationRequest.getRequestObject()));
         return authorisationRequest;
     }
 
-    private SignedJWT decryptJWT(EncryptedJWT encryptedJWT) throws JOSEException {
-        encryptedJWT.decrypt(new RSADecrypter(keyPair.getPrivate()));
+    private SignedJWT decryptJWT(EncryptedJWT encryptedJWT, boolean isIpvRequest)
+            throws JOSEException {
+        encryptedJWT.decrypt(
+                new RSADecrypter(
+                        (isIpvRequest ? ipvKeyPair.getPrivate() : sisKeyPair.getPrivate())));
         return encryptedJWT.getPayload().toSignedJWT();
     }
 
-    private void validateClaimsInJar(SignedJWT signedJWT, boolean reproveIdentity)
+    private void validateClaimsInJar(
+            SignedJWT signedJWT, boolean reproveIdentity, boolean isIpvRequest)
             throws java.text.ParseException {
+        var clientId = (isIpvRequest ? IPV_CLIENT_ID : SIS_CLIENT_ID);
         assertTrue(Objects.nonNull(signedJWT.getJWTClaimsSet().getClaim("sub")));
         assertTrue(Objects.nonNull(signedJWT.getJWTClaimsSet().getClaim("iss")));
         assertTrue(Objects.nonNull(signedJWT.getJWTClaimsSet().getClaim("response_type")));
@@ -1256,12 +1367,12 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
         assertTrue(Objects.nonNull(signedJWT.getJWTClaimsSet().getClaim("iat")));
         assertTrue(Objects.nonNull(signedJWT.getJWTClaimsSet().getClaim("jti")));
 
-        assertThat(signedJWT.getJWTClaimsSet().getClaim("iss"), equalTo(IPV_CLIENT_ID));
+        assertThat(signedJWT.getJWTClaimsSet().getClaim("iss"), equalTo(clientId));
         assertThat(signedJWT.getJWTClaimsSet().getClaim("response_type"), equalTo("code"));
         assertThat(
                 (boolean) signedJWT.getJWTClaimsSet().getClaim("reprove_identity"),
                 equalTo(reproveIdentity));
-        assertThat(signedJWT.getJWTClaimsSet().getClaim("client_id"), equalTo(IPV_CLIENT_ID));
+        assertThat(signedJWT.getJWTClaimsSet().getClaim("client_id"), equalTo(clientId));
         assertThat(
                 signedJWT.getJWTClaimsSet().getClaim("govuk_signin_journey_id"),
                 equalTo(CLIENT_SESSION_ID));
