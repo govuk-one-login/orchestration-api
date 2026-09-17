@@ -8,8 +8,10 @@ import uk.gov.di.orchestration.sharedtest.matchers.JsonMatcher;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,8 +30,21 @@ public class AuditAssertionsHelper {
 
     public static void assertTxmaAuditEventsReceived(
             SqsQueueExtension queue, Collection<AuditableEvent> events) {
+        assertTxmaAuditEventsReceived(queue, events, List.of());
+    }
 
-        var txmaEvents = events.stream().map(Objects::toString).map("AUTH_"::concat).toList();
+    public static void assertTxmaAuditEventsReceived(
+            SqsQueueExtension queue,
+            Collection<AuditableEvent> eventsWithoutPrefix,
+            Collection<AuditableEvent> eventsWithPrefix) {
+
+        var txmaEvents =
+                Stream.concat(
+                                eventsWithoutPrefix.stream()
+                                        .map(Objects::toString)
+                                        .map("AUTH_"::concat),
+                                eventsWithPrefix.stream())
+                        .toList();
 
         if (txmaEvents.isEmpty()) {
             throw new RuntimeException(
