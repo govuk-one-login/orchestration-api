@@ -438,6 +438,23 @@ class RequestObjectAuthorizeValidatorTest {
             assertThat(requestObjectError.get().redirectURI().toString(), equalTo(REDIRECT_URI));
             assertEquals(STATE, requestObjectError.get().state());
         }
+
+        @Test
+        void validatorReturnsErrorObjectWhenResponseTypeIsNull() throws Exception {
+            var jwtClaimsSet = getDefaultJWTClaimsSetBuilder().build();
+            var authRequest =
+                    new AuthenticationRequest.Builder(
+                                    generateSignedJWT(jwtClaimsSet, keyPair), CLIENT_ID)
+                            .build();
+            var requestObjectError = validator.validate(authRequest);
+
+            assertTrue(requestObjectError.isPresent());
+            assertThat(
+                    requestObjectError.get().errorObject(),
+                    equalTo(OAuth2Error.UNSUPPORTED_RESPONSE_TYPE));
+            assertThat(requestObjectError.get().redirectURI().toString(), equalTo(REDIRECT_URI));
+            assertEquals(STATE, requestObjectError.get().state());
+        }
     }
 
     @Nested
@@ -509,17 +526,29 @@ class RequestObjectAuthorizeValidatorTest {
     @Nested
     class ResponseModeClaim {
         @Test
-        void shouldThrowErrorWhenResponseModeIsInvalid() throws JOSEException {
+        void validatorReturnsErrorObjectWhenResponseModeIsInvalid()
+                throws JOSEException,
+                        InvalidAuthorizeRequestException,
+                        ClientSignatureValidationException,
+                        JwksException {
             var jwtClaimsSet =
                     getDefaultJWTClaimsSetBuilder().claim("response_mode", "code").build();
             var authRequest = generateAuthRequest(generateSignedJWT(jwtClaimsSet, keyPair));
-            assertThrows(
-                    InvalidAuthorizeRequestException.class, () -> validator.validate(authRequest));
+            var errorObject = validator.validate(authRequest);
+
+            assertTrue(errorObject.isPresent());
+            assertThat(errorObject.get().errorObject(), equalTo(OAuth2Error.INVALID_REQUEST));
+            assertThat(
+                    errorObject.get().errorObject().getDescription(),
+                    equalTo("Invalid response mode included in request: code"));
         }
 
         @Test
-        void shouldThrowErrorWhenResponseModeIsInvalidBeforeValidatingARedirectingError()
-                throws JOSEException {
+        void validatorReturnsErrorObjectWhenResponseModeIsInvalidBeforeValidatingARedirectingError()
+                throws JOSEException,
+                        InvalidAuthorizeRequestException,
+                        ClientSignatureValidationException,
+                        JwksException {
             // No state is an error we redirect back to the  RP for
             var jwtClaimsSet =
                     new JWTClaimsSet.Builder()
@@ -533,8 +562,13 @@ class RequestObjectAuthorizeValidatorTest {
                             .issuer(CLIENT_ID.getValue())
                             .build();
             var authRequest = generateAuthRequest(generateSignedJWT(jwtClaimsSet, keyPair));
-            assertThrows(
-                    InvalidAuthorizeRequestException.class, () -> validator.validate(authRequest));
+            var errorObject = validator.validate(authRequest);
+
+            assertTrue(errorObject.isPresent());
+            assertThat(errorObject.get().errorObject(), equalTo(OAuth2Error.INVALID_REQUEST));
+            assertThat(
+                    errorObject.get().errorObject().getDescription(),
+                    equalTo("Invalid response mode included in request: code"));
         }
 
         @ParameterizedTest
