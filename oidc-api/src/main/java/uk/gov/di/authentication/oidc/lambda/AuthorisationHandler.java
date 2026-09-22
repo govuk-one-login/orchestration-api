@@ -304,6 +304,15 @@ public class AuthorisationHandler
             return generateApiGatewayProxyResponse(
                     SERVER_ERROR.getHTTPStatusCode(), SERVER_ERROR.getDescription());
         }
+        if (authRequestError.isPresent()
+                && authRequestError
+                        .get()
+                        .errorObject()
+                        .getDescription()
+                        .contains("response mode")) {
+            var errorMessage = authRequestError.get().errorObject().getDescription();
+            return generateBadRequestResponse(user, errorMessage, client.getClientID());
+        }
 
         if (authRequestError.isPresent()) {
             return generateErrorResponse(
