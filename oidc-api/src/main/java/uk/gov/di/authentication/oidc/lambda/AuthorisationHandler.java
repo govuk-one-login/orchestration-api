@@ -21,6 +21,9 @@ import com.nimbusds.openid.connect.sdk.Prompt;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
+import org.bouncycastle.jcajce.provider.digest.SHA256;
+import org.bouncycastle.util.encoders.Hex;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.gov.di.authentication.app.domain.DocAppAuditableEvent;
 import uk.gov.di.authentication.oidc.domain.OidcAuditableEvent;
@@ -75,6 +78,7 @@ import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.shared.services.TokenValidationService;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -364,8 +368,9 @@ public class AuthorisationHandler
                     "rpStateLength",
                     authRequest.getState().getValue().length(),
                     Map.of("clientId", clientId, "clientName", client.getClientName()));
+            LOG.info("SHA-256 of RP state: {}", getStateHash(authRequest.getState()));
         } catch (Exception e) {
-            LOG.warn("Error recording state length, continuing: ", e);
+            LOG.warn("Error recording state metrics, continuing: ", e);
         }
 
         var isDocAppJourney =
@@ -1039,5 +1044,11 @@ public class AuthorisationHandler
 
     private AuthenticationRequest stripOutLoginHintQueryParams(AuthenticationRequest authRequest) {
         return new AuthenticationRequest.Builder(authRequest).loginHint(null).build();
+    }
+
+    private static @NotNull String getStateHash(State state) {
+        var stateDigest =
+                new SHA256.Digest().digest(state.toString().getBytes(StandardCharsets.UTF_8));
+        return new String(Hex.encode(stateDigest), StandardCharsets.UTF_8);
     }
 }
