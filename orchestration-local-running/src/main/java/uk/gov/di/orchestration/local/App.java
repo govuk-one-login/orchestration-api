@@ -37,6 +37,7 @@ public class App {
         kmsInitialiser.createKey(
                 "alias/local-external-token-signing-key", KeyUsageType.SIGN_VERIFY);
         kmsInitialiser.createKey("alias/local-ipv-token-signing-key", KeyUsageType.SIGN_VERIFY);
+        kmsInitialiser.createKey("alias/local-sis-token-signing-key", KeyUsageType.SIGN_VERIFY);
         kmsInitialiser.createKey("alias/local-storage-token-signing-key", KeyUsageType.SIGN_VERIFY);
 
         // Set up localstack SQS queues
