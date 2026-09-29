@@ -90,6 +90,7 @@ public class ClientStoreExtension extends DynamoExtension implements AfterEachCa
         private boolean maxAgeEnabled = false;
         private boolean pkceEnforced = false;
         private String landingPageUrl = null;
+        private PublicKeySource publicKeySource = PublicKeySource.STATIC;
 
         public void saveToDynamo() {
             dynamoClientService.addClient(
@@ -97,7 +98,7 @@ public class ClientStoreExtension extends DynamoExtension implements AfterEachCa
                     clientName,
                     redirectUris,
                     contacts,
-                    PublicKeySource.STATIC.getValue(),
+                    publicKeySource.getValue(),
                     publicKey,
                     jwksUrl,
                     scopes,
@@ -240,6 +241,11 @@ public class ClientStoreExtension extends DynamoExtension implements AfterEachCa
 
         public ClientRegistrationBuilder withLandingPageUrl(String landingPageUrl) {
             this.landingPageUrl = landingPageUrl;
+            return this;
+        }
+
+        public ClientRegistrationBuilder withPublicKeySource(PublicKeySource publicKeySource) {
+            this.publicKeySource = publicKeySource;
             return this;
         }
     }

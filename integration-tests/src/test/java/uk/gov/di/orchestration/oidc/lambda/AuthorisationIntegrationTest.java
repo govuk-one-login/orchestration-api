@@ -41,6 +41,7 @@ import uk.gov.di.orchestration.shared.entity.CredentialTrustLevel;
 import uk.gov.di.orchestration.shared.entity.CustomScopeValue;
 import uk.gov.di.orchestration.shared.entity.LevelOfConfidence;
 import uk.gov.di.orchestration.shared.entity.OrchSessionItem;
+import uk.gov.di.orchestration.shared.entity.PublicKeySource;
 import uk.gov.di.orchestration.shared.entity.ResponseHeaders;
 import uk.gov.di.orchestration.shared.entity.ValidClaims;
 import uk.gov.di.orchestration.shared.helpers.IdGenerator;
@@ -2206,6 +2207,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                         List.of(
                                                 CORE_IDENTITY_JWT.getValue(),
                                                 ValidClaims.ADDRESS.getValue()))
+                                .withPublicKeySource(PublicKeySource.STATIC)
                                 .withPublicKey(
                                         Base64.getMimeEncoder()
                                                 .encodeToString(
