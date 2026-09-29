@@ -58,7 +58,6 @@ import uk.gov.di.orchestration.sharedtest.extensions.OrchSessionExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.SqsQueueExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.StateStorageExtension;
 
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -1268,20 +1267,12 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
 
         @Override
         public URL getIPVJwksUrl() {
-            try {
-                return ipvJwksExtension.getJwksUrl();
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
+            return ipvJwksExtension.getJwksUrl();
         }
 
         @Override
         public URL getSISJwksUrl() {
-            try {
-                return sisJwksExtension.getJwksUrl();
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
+            return sisJwksExtension.getJwksUrl();
         }
     }
 
