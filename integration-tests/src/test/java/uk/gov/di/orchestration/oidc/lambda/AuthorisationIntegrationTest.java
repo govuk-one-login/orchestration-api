@@ -43,7 +43,6 @@ import uk.gov.di.orchestration.shared.entity.LevelOfConfidence;
 import uk.gov.di.orchestration.shared.entity.OrchSessionItem;
 import uk.gov.di.orchestration.shared.entity.ResponseHeaders;
 import uk.gov.di.orchestration.shared.entity.ValidClaims;
-import uk.gov.di.orchestration.shared.entity.VectorOfTrust;
 import uk.gov.di.orchestration.shared.helpers.IdGenerator;
 import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
@@ -881,7 +880,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         void shouldRedirectToLoginWithValidRequestObjectNonDocApp()
                 throws JOSEException, ParseException {
             setupForAuthJourney();
-            SignedJWT signedJWT = createSignedJWT("", CLAIMS, List.of("openid"));
+            SignedJWT signedJWT = createSignedJWT(List.of("openid"), Map.of("claims", CLAIMS));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -995,20 +994,13 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                 LevelOfConfidence expectedLevelOfConfidence)
                 throws JOSEException {
             setupForAuthJourney();
-            Map<String, String> extraParams = new HashMap<>();
-            extraParams.put("_ga", "12345");
-            extraParams.put("cookie_consent", "approve");
-            var requestObject =
-                    createSignedJWT(
-                            "",
-                            CLAIMS,
-                            List.of("openid"),
-                            null,
-                            null,
-                            null,
-                            vtrString,
-                            extraParams,
-                            null);
+            Map<String, Object> extraClaims =
+                    new HashMap<>(
+                            Map.of("claims", CLAIMS, "_ga", "12345", "cookie_consent", "approve"));
+            if (vtrString != null) {
+                extraClaims.put("vtr", vtrString);
+            }
+            var requestObject = createSignedJWT(List.of("openid"), extraClaims);
             Map<String, String> requestParams =
                     Map.of(
                             "client_id",
@@ -1072,7 +1064,12 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                 throws JOSEException, ParseException {
             setupForDocAppJourney();
 
-            var signedJWT = createSignedJWT(uiLocales);
+            var signedJWT =
+                    createSignedJWT(
+                            List.of(
+                                    OIDCScopeValue.OPENID.getValue(),
+                                    CustomScopeValue.DOC_CHECKING_APP.getValue()),
+                            Map.of("ui_locales", uiLocales));
             var queryStringParameters =
                     new HashMap<>(
                             Map.of(
@@ -1113,16 +1110,6 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     orchClientSessionExtention.getClientSession(clientSessionID).get();
             var authRequest = AuthenticationRequest.parse(orchClientSession.getAuthRequestParams());
             assertTrue(authRequest.getScope().contains(CustomScopeValue.DOC_CHECKING_APP));
-            assertThat(
-                    authRequest.getCustomParameter("vtr"),
-                    equalTo(List.of("[\"P2.Cl.Cm\",\"P1.Cl.Cm\"]")));
-            assertThat(
-                    orchClientSession.getVtrList(),
-                    equalTo(
-                            List.of(
-                                    VectorOfTrust.of(MEDIUM_LEVEL, LevelOfConfidence.MEDIUM_LEVEL),
-                                    VectorOfTrust.of(MEDIUM_LEVEL, LevelOfConfidence.LOW_LEVEL))));
-
             assertTxmaAuditEventsReceived(
                     txmaAuditQueue,
                     List.of(
@@ -1135,7 +1122,11 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         void shouldGenerateCorrectResponseGivenAValidRequestWhenOnDocAppJourney()
                 throws JOSEException {
             setupForDocAppJourney();
-            SignedJWT signedJWT = createSignedJWT("");
+            SignedJWT signedJWT =
+                    createSignedJWT(
+                            List.of(
+                                    OIDCScopeValue.OPENID.getValue(),
+                                    CustomScopeValue.DOC_CHECKING_APP.getValue()));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -1444,7 +1435,8 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
 
         @Test
         void shouldReturnInvalidRequestForNegativeMaxAgeInRequestObject() throws JOSEException {
-            SignedJWT signedJWT = createSignedJWT("", CLAIMS, List.of("openid"), -100);
+            SignedJWT signedJWT =
+                    createSignedJWT(List.of("openid"), Map.of("claims", CLAIMS, "max_age", -100));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -1529,8 +1521,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                 throws JOSEException {
             setupForAuthJourney();
 
-            SignedJWT signedJWT =
-                    createSignedJWT("", CLAIMS, List.of("openid"), null, null, null, null);
+            SignedJWT signedJWT = createSignedJWT(List.of("openid"), Map.of("claims", CLAIMS));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -1621,7 +1612,8 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
 
             SignedJWT signedJWT =
                     createSignedJWT(
-                            "", CLAIMS, List.of("openid"), null, aCodeChallenge, null, null);
+                            List.of("openid"),
+                            Map.of("claims", CLAIMS, "code_challenge", aCodeChallenge.toString()));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -1712,13 +1704,14 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
 
             SignedJWT signedJWT =
                     createSignedJWT(
-                            "",
-                            CLAIMS,
                             List.of("openid"),
-                            null,
-                            aCodeChallenge,
-                            codeChallengeMethod,
-                            null);
+                            Map.of(
+                                    "claims",
+                                    CLAIMS,
+                                    "code_challenge",
+                                    aCodeChallenge.toString(),
+                                    "code_challenge_method",
+                                    codeChallengeMethod.toString()));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -1813,13 +1806,14 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
 
             SignedJWT signedJWT =
                     createSignedJWT(
-                            "",
-                            CLAIMS,
                             List.of("openid"),
-                            null,
-                            codeChallenge,
-                            codeChallengeMethod,
-                            null);
+                            Map.of(
+                                    "claims",
+                                    CLAIMS,
+                                    "code_challenge",
+                                    codeChallenge.toString(),
+                                    "code_challenge_method",
+                                    codeChallengeMethod.toString()));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -1902,8 +1896,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                 throws JOSEException {
             setupForAuthJourneyWithPKCEEnforced();
 
-            SignedJWT signedJWT =
-                    createSignedJWT("", CLAIMS, List.of("openid"), null, null, null, null);
+            SignedJWT signedJWT = createSignedJWT(List.of("openid"), Map.of("claims", CLAIMS));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -1966,7 +1959,9 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         @Test
         void shouldRedirectToFrontendWhenValidLoginHintProvidedInRequestObject() throws Exception {
             SignedJWT signedJWT =
-                    createSignedJWT("", CLAIMS, List.of("openid"), TEST_EMAIL_ADDRESS);
+                    createSignedJWT(
+                            List.of("openid"),
+                            Map.of("claims", CLAIMS, "login_hint", TEST_EMAIL_ADDRESS));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -2010,10 +2005,8 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
 
             SignedJWT signedJWT =
                     createSignedJWT(
-                            "",
-                            CLAIMS,
                             List.of("openid"),
-                            "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111@email.com");
+                            Map.of("claims", CLAIMS, "login_hint", "1".repeat(250) + "@email.com"));
 
             Map<String, String> requestParams =
                     Map.of(
@@ -2230,58 +2223,11 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         return response.getHeaders().get(ResponseHeaders.LOCATION);
     }
 
-    private SignedJWT createSignedJWT(String uiLocales) throws JOSEException {
-        return createSignedJWT(uiLocales, null, null, null, null, null, null);
+    private SignedJWT createSignedJWT(List<String> scopes) throws JOSEException {
+        return createSignedJWT(scopes, Map.of());
     }
 
-    private SignedJWT createSignedJWT(String uiLocales, String claims, List<String> scopes)
-            throws JOSEException {
-        return createSignedJWT(uiLocales, claims, scopes, null, null, null, null);
-    }
-
-    private SignedJWT createSignedJWT(
-            String uiLocales, String claims, List<String> scopes, Integer maxAge)
-            throws JOSEException {
-        return createSignedJWT(uiLocales, claims, scopes, maxAge, null, null, null);
-    }
-
-    private SignedJWT createSignedJWT(
-            String uiLocales, String claims, List<String> scopes, String loginHint)
-            throws JOSEException {
-        return createSignedJWT(uiLocales, claims, scopes, null, null, null, loginHint);
-    }
-
-    private SignedJWT createSignedJWT(
-            String uiLocales,
-            String claims,
-            List<String> scopes,
-            Integer maxAge,
-            CodeChallenge codeChallenge,
-            CodeChallengeMethod codeChallengeMethod,
-            String loginHint)
-            throws JOSEException {
-        return createSignedJWT(
-                uiLocales,
-                claims,
-                scopes,
-                maxAge,
-                codeChallenge,
-                codeChallengeMethod,
-                jsonArrayOf("P2.Cl.Cm", "P1.Cl.Cm"),
-                Map.of(),
-                loginHint);
-    }
-
-    private SignedJWT createSignedJWT(
-            String uiLocales,
-            String claims,
-            List<String> scopes,
-            Integer maxAge,
-            CodeChallenge codeChallenge,
-            CodeChallengeMethod codeChallengeMethod,
-            String vtrString,
-            Map<String, String> extraClaims,
-            String loginHint)
+    private SignedJWT createSignedJWT(List<String> scopes, Map<String, Object> extraClaims)
             throws JOSEException {
         var jwtClaimsSetBuilder =
                 new JWTClaimsSet.Builder()
@@ -2300,32 +2246,6 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                         .claim("client_id", CLIENT_ID)
                         .claim("state", new State().getValue())
                         .issuer(CLIENT_ID);
-
-        if (vtrString != null) {
-            jwtClaimsSetBuilder.claim("vtr", vtrString);
-        }
-        if (claims != null && !claims.isBlank()) {
-            jwtClaimsSetBuilder.claim("claims", claims);
-        }
-        if (uiLocales != null && !uiLocales.isBlank()) {
-            jwtClaimsSetBuilder.claim("ui_locales", uiLocales);
-        }
-
-        if (maxAge != null) {
-            jwtClaimsSetBuilder.claim("max_age", maxAge);
-        }
-
-        if (codeChallenge != null) {
-            jwtClaimsSetBuilder.claim("code_challenge", codeChallenge.getValue());
-        }
-
-        if (codeChallengeMethod != null) {
-            jwtClaimsSetBuilder.claim("code_challenge_method", codeChallengeMethod.getValue());
-        }
-
-        if (loginHint != null) {
-            jwtClaimsSetBuilder.claim("login_hint", loginHint);
-        }
 
         extraClaims.forEach(jwtClaimsSetBuilder::claim);
 
