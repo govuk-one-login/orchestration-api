@@ -95,9 +95,7 @@ public class PrivateKeyJwtClientAuthValidator extends TokenClientAuthValidator {
         } catch (JwksException e) {
             LOG.warn("Failed to fetch or parse JWKS to verify signature of private_key_jwt", e);
             throw new TokenAuthInvalidException(
-                    new ErrorObject(
-                            OAuth2Error.SERVER_ERROR_CODE,
-                            "Failed to fetch or parse JWKS to verify signature of private_key_jwt"),
+                    new ErrorObject(OAuth2Error.INVALID_REQUEST_CODE, e.getMessage()),
                     ClientAuthenticationMethod.PRIVATE_KEY_JWT,
                     UNKNOWN_CLIENT_ID);
         }
