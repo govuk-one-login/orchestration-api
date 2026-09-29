@@ -163,8 +163,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         var baseTokenRequest = constructBaseTokenRequest(scope, vtr, Optional.empty(), clientId);
         var response = makeTokenRequestWithPrivateKeyJWT(baseTokenRequest, keyPair.getPrivate());
 
@@ -190,8 +189,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         var baseTokenRequest =
                 constructBaseTokenRequest(
                         scope, Optional.of("Cl.Cm"), Optional.empty(), Optional.of(CLIENT_ID));
@@ -225,8 +223,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         var baseTokenRequest =
                 constructBaseTokenRequest(
                         scope, Optional.of("Cl.Cm"), Optional.empty(), Optional.of(CLIENT_ID));
@@ -263,7 +260,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         var scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientSecretClient(
+        setupClientSecretClient(
                 CLIENT_ID,
                 clientSecret.getValue(),
                 ClientAuthenticationMethod.CLIENT_SECRET_POST,
@@ -296,8 +293,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         var baseTokenRequest =
                 constructBaseTokenRequest(
                         scope,
@@ -322,8 +318,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PUBLIC);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PUBLIC);
         var baseTokenRequest =
                 constructBaseTokenRequest(
                         scope, Optional.empty(), Optional.empty(), Optional.of(CLIENT_ID));
@@ -352,8 +347,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         var baseTokenRequest =
                 constructBaseTokenRequest(
                         scope, Optional.empty(), Optional.empty(), Optional.of(CLIENT_ID));
@@ -381,8 +375,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope = new Scope(OIDCScopeValue.OPENID.getValue());
         var claimsSetRequest = new ClaimsSetRequest().add("nickname").add("birthdate");
         var oidcClaimsRequest = new OIDCClaimsRequest().withUserInfoClaimsRequest(claimsSetRequest);
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         var baseTokenRequest =
                 constructBaseTokenRequest(
                         scope,
@@ -414,8 +407,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
             throws Exception {
         KeyPair keyPair = KeyPairUtils.generateRsaKeyPair();
         Scope scope = new Scope(OIDCScopeValue.OPENID.getValue());
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         var baseTokenRequest =
                 constructBaseTokenRequest(
                         scope, Optional.empty(), Optional.empty(), Optional.of(CLIENT_ID));
@@ -446,8 +438,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                         OIDCScopeValue.OPENID, OIDCScopeValue.EMAIL, OIDCScopeValue.OFFLINE_ACCESS);
         Subject publicSubject = new Subject();
         KeyPair keyPair = KeyPairUtils.generateRsaKeyPair();
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         SignedJWT signedJWT = generateSignedRefreshToken(scope, publicSubject);
         RefreshToken refreshToken = new RefreshToken(signedJWT.serialize());
         orchRefreshTokenExtension.saveRefreshToken(
@@ -503,8 +494,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                         OIDCScopeValue.OPENID, OIDCScopeValue.EMAIL, OIDCScopeValue.OFFLINE_ACCESS);
         Subject publicSubject = new Subject();
         KeyPair keyPair = KeyPairUtils.generateRsaKeyPair();
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         SignedJWT signedJWT = generateSignedRefreshToken(scope, publicSubject);
         RefreshToken refreshToken = new RefreshToken(signedJWT.serialize());
         orchRefreshTokenExtension.saveRefreshToken(
@@ -546,8 +536,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                         OIDCScopeValue.OPENID, OIDCScopeValue.EMAIL, OIDCScopeValue.OFFLINE_ACCESS);
         Subject publicSubject = new Subject();
         KeyPair keyPair = KeyPairUtils.generateRsaKeyPair();
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         SignedJWT signedJWT = generateSignedRefreshToken(scope, publicSubject);
         RefreshToken refreshToken = new RefreshToken(signedJWT.serialize());
         orchRefreshTokenExtension.saveRefreshToken(
@@ -600,8 +589,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                         OIDCScopeValue.OPENID, OIDCScopeValue.EMAIL, OIDCScopeValue.OFFLINE_ACCESS);
         Subject publicSubject = new Subject();
         KeyPair keyPair = KeyPairUtils.generateRsaKeyPair();
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PAIRWISE);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PAIRWISE);
         SignedJWT signedJWT = generateSignedRefreshToken(scope, publicSubject);
         RefreshToken refreshToken = new RefreshToken(signedJWT.serialize());
         orchRefreshTokenExtension.saveRefreshToken(
@@ -647,7 +635,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientSecretClient(
+        setupClientSecretClient(
                 CLIENT_ID,
                 clientSecret.getValue(),
                 ClientAuthenticationMethod.CLIENT_SECRET_POST,
@@ -675,7 +663,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientWithPrivateKeyJwtAuthentication(
+        setupPrivateKeyJwtClientUsingStaticKey(
                 CLIENT_ID, keyPair.getPublic(), scope, SubjectType.PAIRWISE);
 
         generateAuthRequestAndStoreClientSession(scope, Optional.of("Cl.Cm"), Optional.empty());
@@ -705,8 +693,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         Scope scope =
                 new Scope(
                         OIDCScopeValue.OPENID.getValue(), OIDCScopeValue.OFFLINE_ACCESS.getValue());
-        registerClientWithPrivateKeyJwtAuthentication(
-                keyPair.getPublic(), scope, SubjectType.PUBLIC);
+        setupPrivateKeyJwtClientUsingStaticKey(keyPair.getPublic(), scope, SubjectType.PUBLIC);
         var baseTokenRequest =
                 constructBaseTokenRequest(
                         scope,
@@ -743,12 +730,12 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         return externalTokenSigner.signJwt(claimsSet);
     }
 
-    private void registerClientWithPrivateKeyJwtAuthentication(
+    private void setupPrivateKeyJwtClientUsingStaticKey(
             PublicKey publicKey, Scope scope, SubjectType subjectType) {
-        registerClientWithPrivateKeyJwtAuthentication(CLIENT_ID, publicKey, scope, subjectType);
+        setupPrivateKeyJwtClientUsingStaticKey(CLIENT_ID, publicKey, scope, subjectType);
     }
 
-    private void registerClientWithPrivateKeyJwtAuthentication(
+    private void setupPrivateKeyJwtClientUsingStaticKey(
             String clientId, PublicKey publicKey, Scope scope, SubjectType subjectType) {
         clientStore
                 .createClient()
@@ -761,7 +748,7 @@ public class TokenIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                 .saveToDynamo();
     }
 
-    private void registerClientSecretClient(
+    private void setupClientSecretClient(
             String clientId,
             String clientSecret,
             ClientAuthenticationMethod clientAuthenticationMethod,
