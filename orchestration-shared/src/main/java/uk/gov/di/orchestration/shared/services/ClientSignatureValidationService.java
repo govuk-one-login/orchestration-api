@@ -196,7 +196,7 @@ public class ClientSignatureValidationService {
                 objectMapper.readValue(response.payload().asUtf8String(), String.class);
 
         if (unescapedPayload.equals("error")) {
-            String error = "Returned error from FetchJwksHandler";
+            String error = "Failed to fetch key from JWKS URL";
             LOG.error(error);
             throw new JwksException(error);
         }
@@ -239,10 +239,10 @@ public class ClientSignatureValidationService {
                     errorMessage,
                     errorCode,
                     requestId);
-            throw new JwksException(e.getMessage());
+            throw new JwksException("Failed to fetch key from JWKS URL");
         } catch (Exception e) {
             LOG.error("Exception thrown while invoking FetchJwksFunction: ", e);
-            throw new JwksException(e.getMessage());
+            throw new JwksException("Failed to fetch key from JWKS URL");
         }
     }
 
@@ -252,7 +252,7 @@ public class ClientSignatureValidationService {
             return JwksUtils.retrieveJwkFromURLWithKeyId(new URL(jwksUrl), kid);
         } catch (KeySourceException | MalformedURLException | IllegalArgumentException e) {
             LOG.error("Failed to fetch JWKS directly", e);
-            throw new JwksException("Failed to fetch JWKS directly");
+            throw new JwksException("Failed to fetch key from JWKS URL");
         }
     }
 }
