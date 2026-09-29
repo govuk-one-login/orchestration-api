@@ -90,7 +90,6 @@ import java.util.stream.Collectors;
 
 import static com.nimbusds.oauth2.sdk.OAuth2Error.ACCESS_DENIED_CODE;
 import static com.nimbusds.oauth2.sdk.OAuth2Error.INVALID_REQUEST;
-import static com.nimbusds.oauth2.sdk.OAuth2Error.SERVER_ERROR;
 import static com.nimbusds.oauth2.sdk.OAuth2Error.UNAUTHORIZED_CLIENT_CODE;
 import static com.nimbusds.oauth2.sdk.OAuth2Error.VALIDATION_FAILED;
 import static java.util.Objects.isNull;
@@ -306,7 +305,7 @@ public class AuthorisationHandler
                     VALIDATION_FAILED.getHTTPStatusCode(), VALIDATION_FAILED.getDescription());
         } catch (JwksException e) {
             return generateApiGatewayProxyResponse(
-                    SERVER_ERROR.getHTTPStatusCode(), SERVER_ERROR.getDescription());
+                    INVALID_REQUEST.getHTTPStatusCode(), e.getMessage());
         }
 
         if (authRequestError.isPresent()) {

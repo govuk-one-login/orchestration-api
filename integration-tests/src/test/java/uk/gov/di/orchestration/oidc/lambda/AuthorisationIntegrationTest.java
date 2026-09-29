@@ -1360,6 +1360,101 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     containsString(
                             "error=invalid_request&error_description=Invalid+value+for+channel+parameter"));
         }
+
+        @Test
+        void shouldReturnInvalidRequestWhenClientUsesJwksAndNoKidProvidedInJwt() throws Exception {
+            setupForAuthJourney(
+                    clientConfig ->
+                            clientConfig
+                                    .withPublicKeySource(PublicKeySource.JWKS)
+                                    .withJwksUrl(rpJwksExtension.getJwksUrl().toString()));
+
+            var signedJWT = createSignedJWT(List.of("openid"), Map.of(), null);
+            var requestParams =
+                    Map.of(
+                            "client_id",
+                            CLIENT_ID,
+                            "response_type",
+                            "code",
+                            "request",
+                            signedJWT.serialize(),
+                            "scope",
+                            "openid");
+            var response =
+                    makeRequest(
+                            Optional.empty(),
+                            constructHeaders(Optional.empty()),
+                            requestParams,
+                            Optional.of("GET"));
+
+            assertThat(response, hasStatus(400));
+            assertThat(
+                    response.getBody(),
+                    equalTo(
+                            "Key ID is null but is required to fetch key when PublicKeySource is JWKS"));
+        }
+
+        @Test
+        void shouldReturnInvalidRequestWhenClientUsesJwksAndJwksUrlIsNotReachable()
+                throws Exception {
+            setupForAuthJourney(
+                    clientConfig ->
+                            clientConfig
+                                    .withPublicKeySource(PublicKeySource.JWKS)
+                                    .withJwksUrl("http://localhost/not-a-jwks-endpoint.json"));
+
+            var signedJWT = createSignedJWT(List.of("openid"), Map.of());
+            var requestParams =
+                    Map.of(
+                            "client_id",
+                            CLIENT_ID,
+                            "response_type",
+                            "code",
+                            "request",
+                            signedJWT.serialize(),
+                            "scope",
+                            "openid");
+            var response =
+                    makeRequest(
+                            Optional.empty(),
+                            constructHeaders(Optional.empty()),
+                            requestParams,
+                            Optional.of("GET"));
+
+            assertThat(response, hasStatus(400));
+            assertThat(response.getBody(), equalTo("Failed to fetch key from JWKS URL"));
+        }
+
+        @Test
+        void shouldReturnInvalidRequestWhenClientUsesJwksAndKeyNotFoundInJwks() throws Exception {
+            setupForAuthJourney(
+                    clientConfig ->
+                            clientConfig
+                                    .withPublicKeySource(PublicKeySource.JWKS)
+                                    .withJwksUrl(rpJwksExtension.getJwksUrl().toString()));
+
+            var signedJWT =
+                    createSignedJWT(List.of("openid"), Map.of(), "a-different-key-id-not-in-jwks");
+            var requestParams =
+                    Map.of(
+                            "client_id",
+                            CLIENT_ID,
+                            "response_type",
+                            "code",
+                            "request",
+                            signedJWT.serialize(),
+                            "scope",
+                            "openid");
+            var response =
+                    makeRequest(
+                            Optional.empty(),
+                            constructHeaders(Optional.empty()),
+                            requestParams,
+                            Optional.of("GET"));
+
+            assertThat(response, hasStatus(400));
+            assertThat(response.getBody(), equalTo("Failed to fetch key from JWKS URL"));
+        }
     }
 
     @Nested
@@ -2261,6 +2356,11 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
 
     private SignedJWT createSignedJWT(List<String> scopes, Map<String, Object> extraClaims)
             throws JOSEException {
+        return createSignedJWT(scopes, extraClaims, RP_KEY_ID);
+    }
+
+    private SignedJWT createSignedJWT(
+            List<String> scopes, Map<String, Object> extraClaims, String kid) throws JOSEException {
         var jwtClaimsSetBuilder =
                 new JWTClaimsSet.Builder()
                         .audience("http://localhost/authorize")
@@ -2281,7 +2381,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
 
         extraClaims.forEach(jwtClaimsSetBuilder::claim);
 
-        var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(RP_KEY_ID).build();
+        var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(kid).build();
         var signedJWT = new SignedJWT(jwsHeader, jwtClaimsSetBuilder.build());
         var signer = new RSASSASigner(RP_KEY_PAIR.getPrivate());
         signedJWT.sign(signer);
