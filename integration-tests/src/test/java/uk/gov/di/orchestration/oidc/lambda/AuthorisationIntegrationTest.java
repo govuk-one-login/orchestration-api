@@ -27,6 +27,7 @@ import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue;
 import com.nimbusds.openid.connect.sdk.claims.ClaimRequirement;
 import org.apache.http.client.utils.URIBuilder;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -113,6 +114,8 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
     private static final String AM_CLIENT_ID = "am-test-client";
     private static final String TEST_EMAIL_ADDRESS = "joe.bloggs@digital.cabinet-office.gov.uk";
     private static final KeyPair RP_KEY_PAIR = generateRsaKeyPair();
+    private static final String RP_KEY_ID = "test-rp-key-id";
+    private static final String RP_JWKS_PATH = "/.well-known/rp-jwks.json";
     private static final KeyPair AUTH_ENCRYPTION_KEY_PAIR = generateRsaKeyPair();
     private static final String AUTH_PUBLIC_ENCRYPTION_KEY =
             "-----BEGIN PUBLIC KEY-----\n"
@@ -133,6 +136,8 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
     @RegisterExtension
     public static final RpPublicKeyCacheExtension rpPublicKeyCacheExtension =
             new RpPublicKeyCacheExtension(180);
+
+    @RegisterExtension public static final JwksExtension rpJwksExtension = new JwksExtension();
 
     @RegisterExtension
     public static final OrchSessionExtension orchSessionExtension = new OrchSessionExtension();
@@ -198,6 +203,13 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     return AUTH_PUBLIC_ENCRYPTION_KEY;
                 }
             };
+
+    @BeforeAll
+    static void setup() {
+        var jwk =
+                new RSAKey.Builder((RSAPublicKey) RP_KEY_PAIR.getPublic()).keyID(RP_KEY_ID).build();
+        rpJwksExtension.init(RP_JWKS_PATH, new JWKSet(jwk));
+    }
 
     @Nested
     class AuthJourney {
@@ -880,10 +892,19 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                             AUTHORISATION_INITIATED));
         }
 
-        @Test
-        void shouldRedirectToLoginWithValidRequestObjectNonDocApp()
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void shouldRedirectToLoginWithValidRequestObjectNonDocApp(boolean usePublicKeySourceJwks)
                 throws JOSEException, ParseException {
-            setupForAuthJourney();
+            if (usePublicKeySourceJwks) {
+                setupForAuthJourney(
+                        clientConfig ->
+                                clientConfig
+                                        .withPublicKeySource(PublicKeySource.JWKS)
+                                        .withJwksUrl(rpJwksExtension.getJwksUrl().toString()));
+            } else {
+                setupForAuthJourney();
+            }
             SignedJWT signedJWT = createSignedJWT(List.of("openid"), Map.of("claims", CLAIMS));
 
             Map<String, String> requestParams =
@@ -2260,7 +2281,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
 
         extraClaims.forEach(jwtClaimsSetBuilder::claim);
 
-        var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.RS256).build();
+        var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(RP_KEY_ID).build();
         var signedJWT = new SignedJWT(jwsHeader, jwtClaimsSetBuilder.build());
         var signer = new RSASSASigner(RP_KEY_PAIR.getPrivate());
         signedJWT.sign(signer);
