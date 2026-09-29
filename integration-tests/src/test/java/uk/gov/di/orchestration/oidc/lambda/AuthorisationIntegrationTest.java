@@ -47,6 +47,7 @@ import uk.gov.di.orchestration.shared.helpers.IdGenerator;
 import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.sharedtest.basetest.ApiGatewayHandlerIntegrationTest;
+import uk.gov.di.orchestration.sharedtest.extensions.ClientStoreExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.CrossBrowserStorageExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.JwksCacheExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.JwksExtension;
@@ -67,6 +68,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static com.nimbusds.oauth2.sdk.OAuth2Error.INVALID_REQUEST;
@@ -682,7 +684,8 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         @Test
         void
                 shouldReturnRequestVtrNotValidErrorToRPWhenIdentityLoCRequestedAndIdentityNotSupported() {
-            setupForAuthJourney(false);
+            setupForAuthJourney(
+                    clientConfig -> clientConfig.withIdentityVerificationSupported(false));
             String sessionId = givenAnExistingSession();
 
             var queryParams = constructQueryStringParameters(CLIENT_ID, null, "openid", "P2.Cl.Cm");
@@ -2185,22 +2188,28 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
     }
 
     private void setupForAuthJourney() {
-        setupForAuthJourney(true);
+        setupForAuthJourney(clientConfig -> clientConfig.withIdentityVerificationSupported(true));
     }
 
-    private void setupForAuthJourney(boolean identityVerificationSupported) {
-        clientStore
-                .createClient()
-                .withClientId(CLIENT_ID)
-                .withClientLoCs(
-                        List.of(
-                                LevelOfConfidence.MEDIUM_LEVEL.getValue(),
-                                LevelOfConfidence.LOW_LEVEL.getValue()))
-                .withClaims(List.of(CORE_IDENTITY_JWT.getValue(), ValidClaims.ADDRESS.getValue()))
-                .withPublicKey(
-                        Base64.getMimeEncoder()
-                                .encodeToString(RP_KEY_PAIR.getPublic().getEncoded()))
-                .withIdentityVerificationSupported(identityVerificationSupported)
+    private void setupForAuthJourney(
+            UnaryOperator<ClientStoreExtension.ClientRegistrationBuilder> clientConfig) {
+        clientConfig
+                .apply(
+                        clientStore
+                                .createClient()
+                                .withClientId(CLIENT_ID)
+                                .withClientLoCs(
+                                        List.of(
+                                                LevelOfConfidence.MEDIUM_LEVEL.getValue(),
+                                                LevelOfConfidence.LOW_LEVEL.getValue()))
+                                .withClaims(
+                                        List.of(
+                                                CORE_IDENTITY_JWT.getValue(),
+                                                ValidClaims.ADDRESS.getValue()))
+                                .withPublicKey(
+                                        Base64.getMimeEncoder()
+                                                .encodeToString(
+                                                        RP_KEY_PAIR.getPublic().getEncoded())))
                 .saveToDynamo();
         handler = new AuthorisationHandler(configuration);
         txmaAuditQueue.clear();
@@ -2249,7 +2258,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
 
         extraClaims.forEach(jwtClaimsSetBuilder::claim);
 
-        var jwsHeader = new JWSHeader(JWSAlgorithm.RS256);
+        var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.RS256).build();
         var signedJWT = new SignedJWT(jwsHeader, jwtClaimsSetBuilder.build());
         var signer = new RSASSASigner(RP_KEY_PAIR.getPrivate());
         signedJWT.sign(signer);
