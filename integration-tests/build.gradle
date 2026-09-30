@@ -33,7 +33,6 @@ dependencies {
     implementation project(":sis-api"), noXray
     implementation project(":interventions-api-stub"), noXray
     implementation project(":doc-checking-app-api"), noXray
-    implementation project(":user-permissions"), noXray
 
     testRuntimeOnly libs.bundles.testRuntime
     testImplementation(libs.wiremock)
