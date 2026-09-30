@@ -10,8 +10,6 @@ include 'shared-test'
 include 'ipv-api'
 include 'sis-api'
 include 'doc-checking-app-api'
-include 'interventions-api-stub'
-include 'ticf-cri-stub'
 include 'orchestration-local-running'
 include 'audit-events'
 
