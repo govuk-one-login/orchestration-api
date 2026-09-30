@@ -1,6 +1,6 @@
-package uk.gov.di.authentication.sharedtest.extensions;
+package uk.gov.di.orchestration.sharedtest.extensions;
 
-import uk.gov.di.authentication.sharedtest.httpstub.HttpStubExtension;
+import uk.gov.di.orchestration.sharedtest.httpstub.HttpStubExtension;
 
 public class AccountInterventionsStubExtension extends HttpStubExtension {
 
