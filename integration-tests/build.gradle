@@ -33,7 +33,6 @@ dependencies {
     implementation project(":sis-api"), noXray
     implementation project(":interventions-api-stub"), noXray
     implementation project(":doc-checking-app-api"), noXray
-    implementation project(":utils"), noXray
     implementation project(":user-permissions"), noXray
 
     testRuntimeOnly libs.bundles.testRuntime
@@ -110,11 +109,9 @@ jacocoTestReport {
     sourceDirectories.from(
             project(":oidc-api").sourceSets.main.java,
             project(":client-registry-api").sourceSets.main.java,
-            project(":shared").sourceSets.main.java,
-            project(":utils").sourceSets.main.java)
+            project(":shared").sourceSets.main.java)
     classDirectories.from(
             project(":client-registry-api").sourceSets.main.output,
             project(":oidc-api").sourceSets.main.output,
-            project(":shared").sourceSets.main.output,
-            project(":utils").sourceSets.main.output)
+            project(":shared").sourceSets.main.output)
 }
