@@ -139,13 +139,6 @@ repos:
           - windows_amd64
           - -r
           - ci/terraform
-      - id: deprecation-checker
-        name: Check deprecation policy
-        entry: ./gradlew :deprecation-checker:checkDeprecations
-        language: system
-        pass_filenames: false
-        files: '\.java$'
-
       - id: sam-validate
         name: SAM validate with lint
         entry: bash

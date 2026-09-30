@@ -13,7 +13,6 @@ include 'doc-checking-app-api'
 include 'test-services-api'
 include 'interventions-api-stub'
 include 'ticf-cri-stub'
-include 'deprecation-checker'
 include 'orchestration-local-running'
 include 'audit-events'
 
