@@ -804,31 +804,57 @@ class QueryParamsAuthorizeValidatorTest {
     }
 
     @Test
-    void shouldThrowInvalidResponseModeErrorWhenResponseModeIsInvalid() {
+    void validatorReturnsErrorObjectWhenResponseModeIsInvalid()
+            throws InvalidAuthorizeRequestException {
         AuthenticationRequest.Builder authRequestBuilder =
                 new AuthenticationRequest.Builder(
                                 VALID_RESPONSE_TYPE, VALID_SCOPES, CLIENT_ID, REDIRECT_URI)
                         .state(STATE)
                         .nonce(NONCE)
                         .responseMode(new ResponseMode("code"));
+        var errorObject = queryParamsAuthorizeValidator.validate(authRequestBuilder.build());
 
-        assertThrows(
-                InvalidAuthorizeRequestException.class,
-                () -> queryParamsAuthorizeValidator.validate(authRequestBuilder.build()));
+        assertTrue(errorObject.isPresent());
+        assertThat(errorObject.get().errorObject(), equalTo(OAuth2Error.INVALID_REQUEST));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Invalid response mode included in request: code"));
     }
 
     @Test
-    void shouldThrowWhenResponseModeIsInvalidBeforeValidatingARedirectingError() {
+    void validatorReturnsErrorObjectWithoutInjectedCodeForInjectionAttacksInResponseMode()
+            throws InvalidAuthorizeRequestException {
+        AuthenticationRequest.Builder authRequestBuilder =
+                new AuthenticationRequest.Builder(
+                                VALID_RESPONSE_TYPE, VALID_SCOPES, CLIENT_ID, REDIRECT_URI)
+                        .state(STATE)
+                        .nonce(NONCE)
+                        .responseMode(new ResponseMode("code\ninjectedcode"));
+        var errorObject = queryParamsAuthorizeValidator.validate(authRequestBuilder.build());
+
+        assertTrue(errorObject.isPresent());
+        assertThat(errorObject.get().errorObject(), equalTo(OAuth2Error.INVALID_REQUEST));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Illegal char(s) in response mode"));
+    }
+
+    @Test
+    void validatorReturnsErrorObjectWhenResponseModeIsInvalidBeforeValidatingARedirectingError()
+            throws InvalidAuthorizeRequestException {
         // No state is an error we redirect back to the RP with an error message with
         AuthenticationRequest.Builder authRequestBuilder =
                 new AuthenticationRequest.Builder(
                                 VALID_RESPONSE_TYPE, VALID_SCOPES, CLIENT_ID, REDIRECT_URI)
                         .nonce(NONCE)
                         .responseMode(new ResponseMode("code"));
+        var errorObject = queryParamsAuthorizeValidator.validate(authRequestBuilder.build());
 
-        assertThrows(
-                InvalidAuthorizeRequestException.class,
-                () -> queryParamsAuthorizeValidator.validate(authRequestBuilder.build()));
+        assertTrue(errorObject.isPresent());
+        assertThat(errorObject.get().errorObject(), equalTo(OAuth2Error.INVALID_REQUEST));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Invalid response mode included in request: code"));
     }
 
     @ParameterizedTest

@@ -55,7 +55,11 @@ public class QueryParamsAuthorizeValidator extends BaseAuthorizeValidator {
 
         var responseMode = authRequest.getResponseMode();
         if (responseMode != null) {
-            validateResponseMode(responseMode.getValue());
+            var responseModeError = validateResponseMode(responseMode.getValue());
+            if (responseModeError.isPresent()) {
+                return Optional.of(
+                        new AuthRequestError(responseModeError.get(), redirectURI, null));
+            }
         }
 
         if (authRequest.getState() == null) {
@@ -76,7 +80,8 @@ public class QueryParamsAuthorizeValidator extends BaseAuthorizeValidator {
                     new AuthRequestError(
                             OAuth2Error.REQUEST_URI_NOT_SUPPORTED, redirectURI, state));
         }
-        if (!authRequest.getResponseType().toString().equals(ResponseType.CODE.toString())) {
+        if ((authRequest.getResponseType() == null)
+                || !authRequest.getResponseType().toString().equals(ResponseType.CODE.toString())) {
             logErrorInProdElseWarn(
                     "Unsupported responseType included in request. Expected responseType of code");
             return Optional.of(
