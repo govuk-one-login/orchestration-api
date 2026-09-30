@@ -177,12 +177,12 @@ class QueryParamsAuthorizeValidatorTest {
         var errorObject = queryParamsAuthorizeValidator.validate(authRequest);
 
         assertTrue(errorObject.isPresent());
-
         assertThat(
-                errorObject.get().errorObject(),
-                equalTo(
-                        new ErrorObject(
-                                OAuth2Error.INVALID_REQUEST_CODE, "Invalid channel in request.")));
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Invalid value for channel parameter."));
         assertEquals(STATE, errorObject.get().state());
     }
 
@@ -278,11 +278,11 @@ class QueryParamsAuthorizeValidatorTest {
 
         assertTrue(errorObject.isPresent());
         assertThat(
-                errorObject.get().errorObject(),
-                equalTo(
-                        new ErrorObject(
-                                OAuth2Error.INVALID_REQUEST_CODE,
-                                "Request contains invalid claims")));
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Request contains invalid claims"));
         assertEquals(STATE, errorObject.get().state());
     }
 
@@ -396,11 +396,11 @@ class QueryParamsAuthorizeValidatorTest {
 
         assertTrue(errorObject.isPresent());
         assertThat(
-                errorObject.get().errorObject(),
-                equalTo(
-                        new ErrorObject(
-                                OAuth2Error.INVALID_REQUEST_CODE,
-                                "Request is missing state parameter")));
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Request is missing state parameter"));
         assertNull(errorObject.get().state());
     }
 
@@ -439,11 +439,11 @@ class QueryParamsAuthorizeValidatorTest {
 
         assertTrue(errorObject.isPresent());
         assertThat(
-                errorObject.get().errorObject(),
-                equalTo(
-                        new ErrorObject(
-                                OAuth2Error.INVALID_REQUEST_CODE,
-                                "Request is missing nonce parameter")));
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Request is missing nonce parameter"));
         assertEquals(STATE, errorObject.get().state());
     }
 
@@ -489,12 +489,11 @@ class QueryParamsAuthorizeValidatorTest {
 
         assertTrue(errorObject.isPresent());
         assertThat(
-                errorObject.get().errorObject().toJSONObject(),
-                equalTo(
-                        new ErrorObject(
-                                        OAuth2Error.INVALID_REQUEST_CODE,
-                                        "Request vtr is not permitted")
-                                .toJSONObject()));
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Request vtr is not permitted"));
     }
 
     @Test
@@ -522,12 +521,11 @@ class QueryParamsAuthorizeValidatorTest {
 
         assertTrue(errorObject.isPresent());
         assertThat(
-                errorObject.get().errorObject().toJSONObject(),
-                equalTo(
-                        new ErrorObject(
-                                        OAuth2Error.INVALID_REQUEST_CODE,
-                                        "Request vtr is not permitted")
-                                .toJSONObject()));
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Request vtr is not permitted"));
         String expectedLogMessage =
                 "Level of confidence values for an identity journey have been requested, but identity is not supported for this client.";
         assertThat(baseClassLogging.events(), hasItem(withMessageContaining(expectedLogMessage)));
@@ -559,12 +557,11 @@ class QueryParamsAuthorizeValidatorTest {
 
         assertTrue(errorObject.isPresent());
         assertThat(
-                errorObject.get().errorObject().toJSONObject(),
-                equalTo(
-                        new ErrorObject(
-                                        OAuth2Error.INVALID_REQUEST_CODE,
-                                        "Request vtr is not permitted")
-                                .toJSONObject()));
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Request vtr is not permitted"));
         String expectedLogMessage =
                 "Request contains level of confidence values for an identity journey but the tokenAuthMethod is incompatible.";
         assertThat(baseClassLogging.events(), hasItem(withMessageContaining(expectedLogMessage)));
@@ -609,12 +606,11 @@ class QueryParamsAuthorizeValidatorTest {
 
         assertTrue(errorObject.isPresent());
         assertThat(
-                errorObject.get().errorObject().toJSONObject(),
-                equalTo(
-                        new ErrorObject(
-                                        OAuth2Error.INVALID_REQUEST_CODE,
-                                        "Request is missing code_challenge parameter, but PKCE is enforced.")
-                                .toJSONObject()));
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Request is missing code_challenge parameter, but PKCE is enforced."));
         assertEquals(STATE, errorObject.get().state());
     }
 
@@ -639,12 +635,12 @@ class QueryParamsAuthorizeValidatorTest {
 
         assertTrue(errorObject.isPresent());
         assertThat(
-                errorObject.get().errorObject().toJSONObject(),
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
                 equalTo(
-                        new ErrorObject(
-                                        OAuth2Error.INVALID_REQUEST_CODE,
-                                        "Request is missing code_challenge_method parameter. code_challenge_method is required when code_challenge is present.")
-                                .toJSONObject()));
+                        "Request is missing code_challenge_method parameter. code_challenge_method is required when code_challenge is present."));
         assertEquals(STATE, errorObject.get().state());
     }
 
@@ -670,12 +666,11 @@ class QueryParamsAuthorizeValidatorTest {
 
         assertTrue(errorObject.isPresent());
         assertThat(
-                errorObject.get().errorObject().toJSONObject(),
-                equalTo(
-                        new ErrorObject(
-                                        OAuth2Error.INVALID_REQUEST_CODE,
-                                        "Invalid value for code_challenge_method parameter.")
-                                .toJSONObject()));
+                errorObject.get().errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                errorObject.get().errorObject().getDescription(),
+                equalTo("Invalid value for code_challenge_method parameter."));
         assertEquals(STATE, errorObject.get().state());
     }
 
