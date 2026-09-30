@@ -89,18 +89,6 @@
           "provider": "GitHub",
           "checks": [
             {
-              "name": "integration",
-              "scope": "component"
-            }
-          ],
-          "file": ".github/workflows/pre-merge-checks.yml",
-          "path": "$.jobs.run-account-management-and-delivery-receipts-tests"
-        },
-        {
-          "phase": "pre-merge",
-          "provider": "GitHub",
-          "checks": [
-            {
               "name": "unit"
             }
           ],
