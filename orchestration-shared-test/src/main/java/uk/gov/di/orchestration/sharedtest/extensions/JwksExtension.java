@@ -19,8 +19,12 @@ public class JwksExtension extends HttpStubExtension implements BeforeAllCallbac
         super();
     }
 
-    public URL getJwksUrl() throws MalformedURLException {
-        return uri(endpoint).toURL();
+    public URL getJwksUrl() {
+        try {
+            return uri(endpoint).toURL();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void init(JWKSet jwkSet) {

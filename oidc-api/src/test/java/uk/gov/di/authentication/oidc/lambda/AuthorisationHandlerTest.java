@@ -919,10 +919,11 @@ class AuthorisationHandlerTest {
         }
 
         @Test
-        void shouldReturnServerErrorOnJwksException() throws Exception {
-            when(requestObjectAuthorizeValidator.validate(any())).thenThrow(JwksException.class);
-
+        void shouldReturnInvalidRequestOnJwksException() throws Exception {
             var jwtClaimsSet = buildjwtClaimsSet("https://localhost/authorize", null, null);
+            var signedJwt = generateSignedJWT(jwtClaimsSet, RSA_KEY_PAIR);
+            when(requestObjectAuthorizeValidator.validate(any()))
+                    .thenThrow(new JwksException("Failed to fetch from JWKS endpoint"));
 
             var event =
                     withRequestEvent(
@@ -934,11 +935,11 @@ class AuthorisationHandlerTest {
                                     "response_type",
                                     "code",
                                     "request",
-                                    generateSignedJWT(jwtClaimsSet, RSA_KEY_PAIR).serialize()));
+                                    signedJwt.serialize()));
 
             var response = makeHandlerRequest(event);
-            assertEquals(500, response.getStatusCode());
-            assertEquals("Unexpected server error", response.getBody());
+            assertEquals(400, response.getStatusCode());
+            assertEquals("Failed to fetch from JWKS endpoint", response.getBody());
         }
 
         @Test

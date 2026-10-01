@@ -47,6 +47,7 @@ import java.util.Optional;
 
 import static com.nimbusds.jose.JWSAlgorithm.RS256;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -198,9 +199,11 @@ class ClientSignatureValidationServiceTest {
             when(lambdaClient.invoke((InvokeRequest) any())).thenReturn(response);
             var signedJWT = generateSignedJWT(keyPair.getPrivate());
 
-            assertThrows(
-                    JwksException.class,
-                    () -> clientSignatureValidationService.validate(signedJWT, client));
+            var exception =
+                    assertThrows(
+                            JwksException.class,
+                            () -> clientSignatureValidationService.validate(signedJWT, client));
+            assertThat(exception.getMessage(), equalTo("Failed to fetch key from JWKS URL"));
         }
 
         @Test
@@ -209,9 +212,11 @@ class ClientSignatureValidationServiceTest {
                     .thenThrow(LambdaException.class);
             var signedJWT = generateSignedJWT(keyPair.getPrivate());
 
-            assertThrows(
-                    JwksException.class,
-                    () -> clientSignatureValidationService.validate(signedJWT, client));
+            var exception =
+                    assertThrows(
+                            JwksException.class,
+                            () -> clientSignatureValidationService.validate(signedJWT, client));
+            assertThat(exception.getMessage(), equalTo("Failed to fetch key from JWKS URL"));
 
             assertThat(
                     logging.events(),
@@ -227,9 +232,11 @@ class ClientSignatureValidationServiceTest {
                     .thenThrow(SdkClientException.class);
             var signedJWT = generateSignedJWT(keyPair.getPrivate());
 
-            assertThrows(
-                    JwksException.class,
-                    () -> clientSignatureValidationService.validate(signedJWT, client));
+            var exception =
+                    assertThrows(
+                            JwksException.class,
+                            () -> clientSignatureValidationService.validate(signedJWT, client));
+            assertThat(exception.getMessage(), equalTo("Failed to fetch key from JWKS URL"));
 
             assertThat(
                     logging.events(),
