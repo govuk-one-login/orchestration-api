@@ -152,7 +152,7 @@ jobs:
         if: needs.check-changed-files.outputs.java_changed == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --parallel test jacocoTestReport -x integration-tests:test -x delivery-receipts-integration-tests:test -x spotlessApply -x spotlessCheck
+        run: ./gradlew --parallel test jacocoTestReport -x integration-tests:test -x spotlessApply -x spotlessCheck
 
       - name: Cache Unit Test Reports
         if: needs.check-changed-files.outputs.java_changed == 'true'
@@ -164,8 +164,6 @@ jobs:
             */build/reports/
             !integration-tests/build/jacoco/
             !integration-tests/build/reports/
-            !delivery-receipts-integration-tests/build/jacoco/
-            !delivery-receipts-integration-tests/build/reports/
       - name: Upload Unit Test Reports
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure() && needs.check-changed-files.outputs.java_changed == 'true'
@@ -174,8 +172,6 @@ jobs:
           path: |
             */build/reports/
             !integration-tests/build/reports/
-            !delivery-receipts-integration-tests/build/reports/
-
           retention-days: 5
 
   run-integration-tests-orchestration:

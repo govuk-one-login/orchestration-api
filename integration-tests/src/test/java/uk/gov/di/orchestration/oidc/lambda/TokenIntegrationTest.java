@@ -48,7 +48,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import uk.gov.di.authentication.oidc.lambda.TokenHandler;
-import uk.gov.di.authentication.sharedtest.logging.CaptureLoggingExtension;
 import uk.gov.di.orchestration.shared.entity.OrchClientSessionItem;
 import uk.gov.di.orchestration.shared.entity.OrchRefreshTokenItem;
 import uk.gov.di.orchestration.shared.entity.VectorOfTrust;
@@ -63,6 +62,7 @@ import uk.gov.di.orchestration.sharedtest.extensions.OrchRefreshTokenExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.RpPublicKeyCacheExtension;
 import uk.gov.di.orchestration.sharedtest.helper.AuditAssertionsHelper;
 import uk.gov.di.orchestration.sharedtest.helper.JsonArrayHelper;
+import uk.gov.di.orchestration.sharedtest.logging.CaptureLoggingExtension;
 import uk.gov.di.orchestration.sharedtest.utils.KeyPairUtils;
 
 import java.net.URI;
@@ -89,9 +89,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static uk.gov.di.authentication.sharedtest.logging.LogEventMatcher.withMessageContaining;
 import static uk.gov.di.orchestration.shared.domain.TokenGeneratedAuditableEvent.OIDC_TOKEN_GENERATED;
 import static uk.gov.di.orchestration.shared.entity.IdentityClaims.VOT;
+import static uk.gov.di.orchestration.sharedtest.logging.LogEventMatcher.withMessageContaining;
 import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyResponseEventMatcher.hasBody;
 import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyResponseEventMatcher.hasStatus;
 
