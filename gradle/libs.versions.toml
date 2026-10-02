@@ -3,7 +3,6 @@ awsSdk = "2.51.3"
 junit = "6.1.2"
 pact = "4.7.0"
 spotbugs = "4.10.4"
-xray = "2.21.0"
 
 [libraries]
 apacheCommonsCodec = "commons-codec:commons-codec:1.19.0"
@@ -59,12 +58,6 @@ reflections = "org.reflections:reflections:0.10.2"
 sl4jNop = "org.slf4j:slf4j-nop:2.0.18"
 webcompere = "uk.org.webcompere:system-stubs-jupiter:2.1.8"
 wiremock = "org.wiremock:wiremock-jetty12:3.13.2"
-xrayBom = { module = "com.amazonaws:aws-xray-recorder-sdk-bom", version.ref = "xray" }
-xrayCore = { module = "com.amazonaws:aws-xray-recorder-sdk-core", version.ref = "xray" }
-xrayAwsSdkInstrumentor = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-instrumentor", version.ref = "xray" }
-xrayAwsSdkCore = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-core", version.ref = "xray" }
-xrayAwsSdkV2 = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2", version.ref = "xray" }
-xrayAwsSdkV2Instrumentor = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2-instrumentor", version.ref = "xray" }
 
 [bundles]
 apache = [
@@ -92,13 +85,6 @@ test = [
     "webcompere"
 ]
 testRuntime = ["jupiterEngine"]
-xray = [
-    "xrayCore",
-    "xrayAwsSdkInstrumentor",
-    "xrayAwsSdkCore",
-    "xrayAwsSdkV2",
-    "xrayAwsSdkV2Instrumentor"
-]
 
 [plugins]
 dockerCompose = "com.avast.gradle.docker-compose:0.17.21"
