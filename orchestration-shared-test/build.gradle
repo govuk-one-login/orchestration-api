@@ -10,7 +10,6 @@ dependencies {
             libs.bundles.awsLambda,
             libs.bundles.apache,
             libs.bundles.nimbus,
-            libs.bundles.lettuce,
             libs.bundles.awsDynamoDb,
             libs.awsKms,
             libs.awsSns,
