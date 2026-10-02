@@ -18,7 +18,6 @@ apacheHttpComponents = "org.apache.httpcomponents.core5:httpcore5:5.4.3"
 approvalTests = "com.approvaltests:approvaltests:31.0.0"
 awaitility = "org.awaitility:awaitility:4.3.0"
 awsCloudwatchEmf = "software.amazon.cloudwatchlogs:aws-embedded-metrics:4.2.0"
-awsCloudwatch = { module = "software.amazon.awssdk:cloudwatch", version.ref = "awsSdk" }
 awsDynamoDbBase = { module = "software.amazon.awssdk:dynamodb", version.ref = "awsSdk" }
 awsDynamoDbEnhanced = { module = "software.amazon.awssdk:dynamodb-enhanced", version.ref = "awsSdk" }
 awsLambdaBase = { module = "software.amazon.awssdk:lambda", version.ref = "awsSdk" }
@@ -27,7 +26,6 @@ awsLambdaEvents = "com.amazonaws:aws-lambda-java-events:3.16.1"
 awsLambdaLog4j = "com.amazonaws:aws-lambda-java-log4j2:1.6.2"
 awsLambdaTests = "com.amazonaws:aws-lambda-java-tests:1.1.2"
 awsKms = { module = "software.amazon.awssdk:kms", version.ref = "awsSdk" }
-awsSecretsManager = { module = "software.amazon.awssdk:secretsmanager", version.ref = "awsSdk" }
 awsSns = { module = "software.amazon.awssdk:sns", version.ref = "awsSdk" }
 awsSqs = { module = "software.amazon.awssdk:sqs", version.ref = "awsSdk" }
 awsSsm = { module = "software.amazon.awssdk:ssm", version.ref = "awsSdk" }
