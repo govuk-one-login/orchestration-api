@@ -16,8 +16,7 @@ dependencies {
             libs.awsSns,
             libs.bundles.awsDynamoDb
 
-    implementation libs.govUkNotify,
-            libs.gson,
+    implementation libs.gson,
             libs.bundles.nimbus,
             libs.bouncyCastle,
             libs.awsCloudwatchEmf,
