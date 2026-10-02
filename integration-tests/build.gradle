@@ -30,7 +30,6 @@ dependencies {
     implementation project(":doc-checking-app-api")
 
     testRuntimeOnly libs.bundles.testRuntime
-    testImplementation(libs.wiremock)
 }
 
 test {
