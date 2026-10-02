@@ -18,7 +18,6 @@ dependencies {
             libs.awsS3,
             libs.awsCloudwatchEmf,
             libs.bundles.awsDynamoDb,
-            libs.bundles.lettuce,
             libs.bundles.awsLambda,
             libs.pactProvider
 

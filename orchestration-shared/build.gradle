@@ -14,7 +14,6 @@ dependencies {
             libs.bundles.awsDynamoDb,
             libs.jetbrainsAnnotations,
             libs.awsKms,
-            libs.bundles.lettuce,
             libs.libphonenumber,
             libs.awsSns,
             libs.awsS3,
