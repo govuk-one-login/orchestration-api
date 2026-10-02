@@ -1,7 +1,6 @@
 package uk.gov.di.orchestration.shared.api;
 
 import com.nimbusds.oauth2.sdk.ErrorObject;
-import com.nimbusds.openid.connect.sdk.Prompt;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 
 import java.net.URI;
@@ -35,9 +34,8 @@ public class AuthFrontend implements CommonFrontend {
         return buildURI(frontendBaseUri, "ipv-callback");
     }
 
-    public URI authorizeURI(Optional<Prompt.Type> prompt, Optional<String> googleAnalytics) {
+    public URI authorizeURI(Optional<String> googleAnalytics) {
         var queryParameters = new HashMap<String, String>();
-        prompt.ifPresent(p -> queryParameters.put("prompt", p.toString()));
         googleAnalytics.ifPresent(s -> queryParameters.put("result", s));
 
         return buildURI(frontendBaseUri, "authorize", queryParameters);

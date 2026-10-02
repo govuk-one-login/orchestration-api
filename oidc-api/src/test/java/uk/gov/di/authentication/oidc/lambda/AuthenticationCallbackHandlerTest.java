@@ -241,8 +241,7 @@ class AuthenticationCallbackHandlerTest {
         when(authFrontend.baseURI()).thenReturn(URI.create(TEST_FRONTEND_BASE_URI));
         when(authFrontend.sessionEndedURI())
                 .thenReturn(URI.create(TEST_FRONTEND_SESSION_ENDED_URI));
-        when(authFrontend.authorizeURI(any(), any()))
-                .thenReturn(URI.create(TEST_FRONTEND_LOGIN_URI));
+        when(authFrontend.authorizeURI(any())).thenReturn(URI.create(TEST_FRONTEND_LOGIN_URI));
         when(configurationService.getAuthenticationBackendURI())
                 .thenReturn(URI.create(TEST_AUTH_BACKEND_BASE_URL));
         when(configurationService.isAccountInterventionServiceCallEnabled()).thenReturn(false);
