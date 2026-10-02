@@ -132,7 +132,7 @@ class AuthenticationAuthorizationServiceTest {
         when(configurationService.getOrchestrationRedirectURI()).thenReturn(ORCH_REDIRECT_URI);
         when(configurationService.isIdentityEnabled()).thenReturn(true);
         when(authFrontend.baseURI()).thenReturn(FRONT_END_BASE_URI);
-        when(authFrontend.authorizeURI(any(), any())).thenReturn(FRONT_END_BASE_URI);
+        when(authFrontend.authorizeURI(any())).thenReturn(FRONT_END_BASE_URI);
         when(tokenValidationService.isTokenSignatureValid(any())).thenReturn(true);
         authService =
                 new AuthenticationAuthorizationService(
@@ -544,7 +544,7 @@ class AuthenticationAuthorizationServiceTest {
                     Optional.empty(),
                     orchSession);
 
-            verify(authFrontend).authorizeURI(Optional.of(Prompt.Type.LOGIN), Optional.empty());
+            verify(authFrontend).authorizeURI(Optional.empty());
 
             var claimsSetCaptor = ArgumentCaptor.forClass(JWTClaimsSet.class);
             verify(orchestrationAuthorizationService)
@@ -570,7 +570,7 @@ class AuthenticationAuthorizationServiceTest {
                     Optional.empty(),
                     orchSession);
 
-            verify(authFrontend).authorizeURI(Optional.empty(), Optional.of("test"));
+            verify(authFrontend).authorizeURI(Optional.of("test"));
         }
 
         @Test

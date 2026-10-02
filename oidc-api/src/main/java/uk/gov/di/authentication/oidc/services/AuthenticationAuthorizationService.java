@@ -14,7 +14,6 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.OIDCClaimsRequest;
 import com.nimbusds.openid.connect.sdk.OIDCError;
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue;
-import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,7 +42,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import static com.nimbusds.oauth2.sdk.OAuth2Error.ACCESS_DENIED_CODE;
@@ -175,16 +173,10 @@ public class AuthenticationAuthorizationService {
             throws AuthenticationAuthorisationRequestException {
         LOG.info("Redirecting");
 
-        Optional<Prompt.Type> prompt =
-                Objects.nonNull(authenticationRequest.getPrompt())
-                                && authenticationRequest.getPrompt().contains(Prompt.Type.LOGIN)
-                        ? Optional.of(Prompt.Type.LOGIN)
-                        : Optional.empty();
-
         var googleAnalyticsOpt =
                 getCustomParameterOpt(authenticationRequest, GOOGLE_ANALYTICS_QUERY_PARAMETER_KEY);
 
-        var redirectURI = authFrontend.authorizeURI(prompt, googleAnalyticsOpt).toString();
+        var redirectURI = authFrontend.authorizeURI(googleAnalyticsOpt).toString();
 
         EncryptedJWT encryptedJWT;
         encryptedJWT =

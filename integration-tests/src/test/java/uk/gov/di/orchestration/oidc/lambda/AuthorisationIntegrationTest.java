@@ -75,8 +75,6 @@ import java.util.stream.Stream;
 
 import static com.nimbusds.oauth2.sdk.OAuth2Error.INVALID_REQUEST;
 import static com.nimbusds.openid.connect.sdk.OIDCScopeValue.OPENID;
-import static com.nimbusds.openid.connect.sdk.Prompt.Type.LOGIN;
-import static com.nimbusds.openid.connect.sdk.Prompt.Type.NONE;
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -220,7 +218,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     makeRequest(
                             Optional.empty(),
                             constructHeaders(Optional.empty()),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", "Cl.Cm"),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "Cl.Cm"),
                             Optional.of("GET"));
             assertThat(response, hasStatus(302));
             assertThat(
@@ -247,7 +245,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     makeRequest(
                             Optional.empty(),
                             constructHeaders(Optional.empty()),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", "P2.Cl.Cm"),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "P2.Cl.Cm"),
                             Optional.of("GET"));
             assertThat(response, hasStatus(302));
 
@@ -283,7 +281,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                             new HttpCookie(
                                                     "di-persistent-session-id",
                                                     PERSISTENT_SESSION_ID))),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", "Cl.Cm"),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "Cl.Cm"),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -330,8 +328,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                             new HttpCookie(
                                                     "di-persistent-session-id",
                                                     PERSISTENT_SESSION_ID))),
-                            constructQueryStringParameters(
-                                    CLIENT_ID, null, "openid", "Cl.Cm", "en"),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "Cl.Cm", "en"),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -392,7 +389,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     makeRequest(
                             Optional.empty(),
                             constructHeaders(Optional.empty()),
-                            constructQueryStringParameters(AM_CLIENT_ID, null, "openid am", null),
+                            constructQueryStringParameters(AM_CLIENT_ID, "openid am", null),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -424,7 +421,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     makeRequest(
                             Optional.empty(),
                             constructHeaders(Optional.empty()),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid am", null),
+                            constructQueryStringParameters(CLIENT_ID, "openid am", null),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -449,7 +446,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                         new HttpCookie("gs", "this is bad"),
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", null),
+                            constructQueryStringParameters(CLIENT_ID, "openid", null),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -491,7 +488,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                         buildSessionCookie("123", DUMMY_CLIENT_SESSION_ID),
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", null),
+                            constructQueryStringParameters(CLIENT_ID, "openid", null),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -541,7 +538,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                                 previousSessionId, DUMMY_CLIENT_SESSION_ID),
                                         // No BSID cookie
                                     }),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", "P2.Cl.Cm"),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "P2.Cl.Cm"),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -592,7 +589,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                                 previousSessionId, DUMMY_CLIENT_SESSION_ID),
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", null),
+                            constructQueryStringParameters(CLIENT_ID, "openid", null),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -637,7 +634,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                                 previousSessionId, DUMMY_CLIENT_SESSION_ID),
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", "P2.Cl.Cm"),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "P2.Cl.Cm"),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -672,7 +669,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
             String sessionId = givenAnExistingSession();
 
             var queryParams =
-                    constructQueryStringParameters(CLIENT_ID, null, "openid ", "[P2.Cl.Cm,Cl.Cm]");
+                    constructQueryStringParameters(CLIENT_ID, "openid ", "[P2.Cl.Cm,Cl.Cm]");
             queryParams.put("vtr", jsonArrayOf("P2.Cl.Cm", "Cl.Cm"));
             var response =
                     makeRequest(
@@ -701,7 +698,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     clientConfig -> clientConfig.withIdentityVerificationSupported(false));
             String sessionId = givenAnExistingSession();
 
-            var queryParams = constructQueryStringParameters(CLIENT_ID, null, "openid", "P2.Cl.Cm");
+            var queryParams = constructQueryStringParameters(CLIENT_ID, "openid", "P2.Cl.Cm");
             var response =
                     makeRequest(
                             Optional.empty(),
@@ -729,8 +726,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     makeRequest(
                             Optional.empty(),
                             constructHeaders(Optional.empty()),
-                            constructQueryStringParameters(
-                                    CLIENT_ID, NONE.toString(), "openid", null),
+                            constructQueryStringParameters(CLIENT_ID, "openid", null),
                             Optional.of("GET"));
             assertThat(response, hasStatus(302));
 
@@ -762,8 +758,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                                 previousSessionId, DUMMY_CLIENT_SESSION_ID),
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
-                            constructQueryStringParameters(
-                                    CLIENT_ID, NONE.toString(), OPENID.getValue(), null),
+                            constructQueryStringParameters(CLIENT_ID, OPENID.getValue(), null),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -795,60 +790,12 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         }
 
         @Test
-        void shouldPromptForLoginWhenPromptLoginAndUserAuthenticated() {
-            setupForAuthJourney();
-            String previousSessionId = givenAnExistingSession();
-            withExistingOrchSessionAndBsid(previousSessionId);
-
-            var response =
-                    makeRequest(
-                            Optional.empty(),
-                            constructHeaders(
-                                    new HttpCookie[] {
-                                        buildSessionCookie(
-                                                previousSessionId, DUMMY_CLIENT_SESSION_ID),
-                                        new HttpCookie("bsid", BROWSER_SESSION_ID)
-                                    }),
-                            constructQueryStringParameters(
-                                    CLIENT_ID, LOGIN.toString(), OPENID.getValue(), null),
-                            Optional.of("GET"));
-
-            assertThat(response, hasStatus(302));
-            var sessionCookie =
-                    getHttpCookieFromMultiValueResponseHeaders(
-                            response.getMultiValueHeaders(), "gs");
-            assertOnSessionCookie(sessionCookie, previousSessionId);
-            assertTrue(
-                    getHttpCookieFromMultiValueResponseHeaders(
-                                    response.getMultiValueHeaders(), "di-persistent-session-id")
-                            .isPresent());
-
-            Optional<HttpCookie> browserSessionIdCookie =
-                    getHttpCookieFromMultiValueResponseHeaders(
-                            response.getMultiValueHeaders(), "bsid");
-            assertTrue(browserSessionIdCookie.isPresent());
-            assertThat(browserSessionIdCookie.get().getValue(), startsWith(BROWSER_SESSION_ID));
-
-            String redirectUri = getLocationResponseHeader(response);
-            assertThat(
-                    redirectUri,
-                    startsWith(TEST_CONFIGURATION_SERVICE.getAuthFrontendBaseURL().toString()));
-            assertThat(URI.create(redirectUri).getQuery(), containsString("prompt=login"));
-
-            assertTxmaAuditEventsReceived(
-                    txmaAuditQueue,
-                    List.of(
-                            AUTHORISATION_REQUEST_RECEIVED,
-                            AUTHORISATION_REQUEST_PARSED,
-                            AUTHORISATION_INITIATED));
-        }
-
-        @Test
         void shouldRequireUpliftWhenHighCredentialLevelOfTrustRequested() {
             setupForAuthJourney();
             String previousSessionId = givenAnExistingSession();
             withExistingOrchSessionAndBsid(previousSessionId);
 
+            String scopes = OPENID.getValue();
             var response =
                     makeRequest(
                             Optional.empty(),
@@ -859,7 +806,9 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
                             constructQueryStringParameters(
-                                    CLIENT_ID, null, OPENID.getValue(), MEDIUM_LEVEL.getValue()),
+                                    CLIENT_ID,
+                                    scopes,
+                                    CredentialTrustLevel.MEDIUM_LEVEL.getValue()),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -974,7 +923,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                 CredentialTrustLevel expectedCredentialStrength,
                 LevelOfConfidence expectedLevelOfConfidence) {
             setupForAuthJourney();
-            var baseParams = constructQueryStringParameters(CLIENT_ID, null, "openid", null);
+            var baseParams = constructQueryStringParameters(CLIENT_ID, "openid", null);
             Map<String, String> queryParams = new HashMap<>(baseParams);
             queryParams.put("_ga", "12345");
             queryParams.put("cookie_consent", "approve");
@@ -1226,7 +1175,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     makeRequest(
                             Optional.empty(),
                             constructHeaders(Optional.empty()),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", "Cl.Cm"),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "Cl.Cm"),
                             Optional.of("GET"));
             assertNoSessionObjectStored(response);
         }
@@ -1271,7 +1220,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                     makeRequest(
                             Optional.empty(),
                             constructHeaders(Optional.empty()),
-                            constructQueryStringParameters(CLIENT_ID, null, "openid", "Cl.Cm"),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "Cl.Cm"),
                             Optional.of("GET"));
 
             var locationHeaderUri = URI.create(response.getHeaders().get("Location"));
@@ -1309,7 +1258,6 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                             constructHeaders(Optional.empty()),
                             constructQueryStringParameters(
                                     CLIENT_ID,
-                                    null,
                                     "openid",
                                     "Cl.Cm",
                                     URI.create("invalid-redirect-uri")),
@@ -1325,7 +1273,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         @Test
         void shouldReturnBadRequestUnsupportedResponseMode() {
             setupForAuthJourney();
-            var queryParams = constructQueryStringParameters(CLIENT_ID, null, "openid", "P2.Cl.Cm");
+            var queryParams = constructQueryStringParameters(CLIENT_ID, "openid", "P2.Cl.Cm");
             queryParams.put("response_mode", "form_post");
 
             var response =
@@ -1342,7 +1290,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
         @Test
         void shouldReturnBadRequestWhenUnsupportedChannelIsSentInRequest() {
             setupForAuthJourney();
-            var queryParams = constructQueryStringParameters(CLIENT_ID, null, "openid", "P2.Cl.Cm");
+            var queryParams = constructQueryStringParameters(CLIENT_ID, "openid", "P2.Cl.Cm");
             queryParams.put("channel", "invalid-channel");
 
             var response =
@@ -1504,8 +1452,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                                 previousSessionId, DUMMY_CLIENT_SESSION_ID),
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
-                            constructQueryStringParameters(
-                                    CLIENT_ID, null, "openid", "P2.Cl.Cm", 0L),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "P2.Cl.Cm", 0L),
                             Optional.of("GET"));
             var newSessionId = getSessionId(response);
 
@@ -1540,8 +1487,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                                 previousSessionId, DUMMY_CLIENT_SESSION_ID),
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
-                            constructQueryStringParameters(
-                                    CLIENT_ID, null, "openid", "P2.Cl.Cm", -100L),
+                            constructQueryStringParameters(CLIENT_ID, "openid", "P2.Cl.Cm", -100L),
                             Optional.of("GET"));
 
             var locationHeaderUri = URI.create(response.getHeaders().get("Location"));
@@ -1620,7 +1566,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
                             constructQueryStringParameters(
-                                    CLIENT_ID, null, "openid", "P2.Cl.Cm", null, null),
+                                    CLIENT_ID, "openid", "P2.Cl.Cm", null, null),
                             Optional.of("GET"));
 
             assertThat(response, hasStatus(302));
@@ -1710,7 +1656,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
                             constructQueryStringParameters(
-                                    CLIENT_ID, null, "openid", "P2.Cl.Cm", codeChallenge, null),
+                                    CLIENT_ID, "openid", "P2.Cl.Cm", codeChallenge, null),
                             Optional.of("GET"));
 
             var locationHeaderUri = URI.create(response.getHeaders().get("Location"));
@@ -1798,7 +1744,6 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                     }),
                             constructQueryStringParameters(
                                     CLIENT_ID,
-                                    null,
                                     "openid",
                                     "P2.Cl.Cm",
                                     codeChallenge,
@@ -1896,7 +1841,6 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                     }),
                             constructQueryStringParameters(
                                     CLIENT_ID,
-                                    null,
                                     "openid",
                                     "P2.Cl.Cm",
                                     codeChallenge,
@@ -1999,7 +1943,7 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                         new HttpCookie("bsid", BROWSER_SESSION_ID)
                                     }),
                             constructQueryStringParameters(
-                                    CLIENT_ID, null, "openid", "P2.Cl.Cm", null, null),
+                                    CLIENT_ID, "openid", "P2.Cl.Cm", null, null),
                             Optional.of("GET"));
 
             var locationHeaderUri = URI.create(response.getHeaders().get("Location"));
@@ -2187,7 +2131,6 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                     }),
                             constructQueryStringParameters(
                                     CLIENT_ID,
-                                    null,
                                     "openid",
                                     "P2.Cl.Cm",
                                     null,
@@ -2215,27 +2158,25 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
     }
 
     private Map<String, String> constructQueryStringParameters(
-            String clientId, String prompt, String scopes, String vtr) {
+            String clientId, String scopes, String vtr) {
         return constructQueryStringParameters(
-                clientId, prompt, scopes, vtr, null, RP_REDIRECT_URI, null, null, null, null);
+                clientId, scopes, vtr, null, RP_REDIRECT_URI, null, null, null, null);
     }
 
     private Map<String, String> constructQueryStringParameters(
-            String clientId, String prompt, String scopes, String vtr, Long maxAge) {
+            String clientId, String scopes, String vtr, Long maxAge) {
         return constructQueryStringParameters(
-                clientId, prompt, scopes, vtr, null, RP_REDIRECT_URI, maxAge, null, null, null);
+                clientId, scopes, vtr, null, RP_REDIRECT_URI, maxAge, null, null, null);
     }
 
     private Map<String, String> constructQueryStringParameters(
             String clientId,
-            String prompt,
             String scopes,
             String vtr,
             CodeChallenge codeChallenge,
             CodeChallengeMethod codeChallengeMethod) {
         return constructQueryStringParameters(
                 clientId,
-                prompt,
                 scopes,
                 vtr,
                 null,
@@ -2247,20 +2188,19 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
     }
 
     private Map<String, String> constructQueryStringParameters(
-            String clientId, String prompt, String scopes, String vtr, String uiLocales) {
+            String clientId, String scopes, String vtr, String uiLocales) {
         return constructQueryStringParameters(
-                clientId, prompt, scopes, vtr, uiLocales, RP_REDIRECT_URI, null, null, null, null);
+                clientId, scopes, vtr, uiLocales, RP_REDIRECT_URI, null, null, null, null);
     }
 
     private Map<String, String> constructQueryStringParameters(
-            String clientId, String prompt, String scopes, String vtr, URI redirectUri) {
+            String clientId, String scopes, String vtr, URI redirectUri) {
         return constructQueryStringParameters(
-                clientId, prompt, scopes, vtr, null, redirectUri, null, null, null, null);
+                clientId, scopes, vtr, null, redirectUri, null, null, null, null);
     }
 
     private Map<String, String> constructQueryStringParameters(
             String clientId,
-            String prompt,
             String scopes,
             String vtr,
             String uiLocales,
@@ -2285,7 +2225,6 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
                                 "scope",
                                 scopes));
 
-        Optional.ofNullable(prompt).ifPresent(s -> queryStringParameters.put("prompt", s));
         Optional.ofNullable(vtr).ifPresent(s -> queryStringParameters.put("vtr", jsonArrayOf(vtr)));
         Optional.ofNullable(uiLocales).ifPresent(s -> queryStringParameters.put("ui_locales", s));
         Optional.ofNullable(maxAge)

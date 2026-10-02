@@ -282,13 +282,8 @@ class AuthorisationHandlerTest {
         when(configService.isIdentityEnabled()).thenReturn(true);
         when(authFrontend.baseURI()).thenReturn(FRONT_END_BASE_URI);
         when(authFrontend.errorURI()).thenReturn(FRONT_END_ERROR_URI);
-        when(authFrontend.authorizeURI(Optional.empty(), Optional.empty()))
-                .thenReturn(FRONT_END_AUTHORIZE_URI);
-        when(authFrontend.authorizeURI(Optional.of(Prompt.Type.LOGIN), Optional.empty()))
-                .thenReturn(FRONT_END_AUTHORIZE_LOGIN_URI);
-        when(authFrontend.authorizeURI(Optional.of(Prompt.Type.LOGIN), Optional.empty()))
-                .thenReturn(FRONT_END_AUTHORIZE_LOGIN_URI);
-        when(authFrontend.authorizeURI(Optional.empty(), Optional.of("sign-in")))
+        when(authFrontend.authorizeURI(Optional.empty())).thenReturn(FRONT_END_AUTHORIZE_URI);
+        when(authFrontend.authorizeURI(Optional.of("sign-in")))
                 .thenReturn(FRONT_END_AUTHORIZE_SIGN_IN_URI);
         when(queryParamsAuthorizeValidator.validate(any(AuthenticationRequest.class)))
                 .thenReturn(Optional.empty());
