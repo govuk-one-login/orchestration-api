@@ -15,7 +15,6 @@ import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCError;
-import com.nimbusds.openid.connect.sdk.Prompt;
 import org.approvaltests.JsonApprovals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -132,7 +131,7 @@ class AuthenticationAuthorizationServiceTest {
         when(configurationService.getOrchestrationRedirectURI()).thenReturn(ORCH_REDIRECT_URI);
         when(configurationService.isIdentityEnabled()).thenReturn(true);
         when(authFrontend.baseURI()).thenReturn(FRONT_END_BASE_URI);
-        when(authFrontend.authorizeURI(any(), any())).thenReturn(FRONT_END_BASE_URI);
+        when(authFrontend.authorizeURI(any())).thenReturn(FRONT_END_BASE_URI);
         when(tokenValidationService.isTokenSignatureValid(any())).thenReturn(true);
         authService =
                 new AuthenticationAuthorizationService(
@@ -290,7 +289,6 @@ class AuthenticationAuthorizationServiceTest {
             assertThat(
                     claimsSet.getClaim("previous_govuk_signin_journey_id"),
                     equalTo(PREVIOUS_CLIENT_SESSION_ID));
-            assertThat(claimsSet.getClaim("prompt"), equalTo("login"));
 
             var actualUserinfo =
                     SerializationService.getInstance()
@@ -532,28 +530,6 @@ class AuthenticationAuthorizationServiceTest {
         }
 
         @Test
-        void shouldRedirectToLoginWithPromptParamWhenSetToLogin() throws Exception {
-            var authRequest = authRequestBuilder(AUTH_ONLY_VTR).prompt(Prompt.Type.LOGIN).build();
-            authService.generateAuthRedirectRequest(
-                    SESSION_ID,
-                    CLIENT_SESSION_ID,
-                    authRequest,
-                    clientRegistry,
-                    false,
-                    AUTH_ONLY_VTR,
-                    Optional.empty(),
-                    orchSession);
-
-            verify(authFrontend).authorizeURI(Optional.of(Prompt.Type.LOGIN), Optional.empty());
-
-            var claimsSetCaptor = ArgumentCaptor.forClass(JWTClaimsSet.class);
-            verify(orchestrationAuthorizationService)
-                    .getSignedAndEncryptedJWT(claimsSetCaptor.capture());
-            var claimsSet = claimsSetCaptor.getValue();
-            assertThat(claimsSet.getClaim("prompt"), equalTo("login"));
-        }
-
-        @Test
         void shouldRetainGoogleAnalyticsParamThroughRedirectToLogin() throws Exception {
             var authRequest =
                     authRequestBuilder(AUTH_ONLY_VTR)
@@ -570,7 +546,7 @@ class AuthenticationAuthorizationServiceTest {
                     Optional.empty(),
                     orchSession);
 
-            verify(authFrontend).authorizeURI(Optional.empty(), Optional.of("test"));
+            verify(authFrontend).authorizeURI(Optional.of("test"));
         }
 
         @Test
@@ -700,10 +676,7 @@ class AuthenticationAuthorizationServiceTest {
 
         private AuthenticationRequest generateAuthRequestForReauthJourney(
                 String reauthToken, VectorOfTrust vtr) throws Exception {
-            return authRequestBuilder(vtr)
-                    .customParameter("id_token_hint", reauthToken)
-                    .prompt(Prompt.Type.LOGIN)
-                    .build();
+            return authRequestBuilder(vtr).customParameter("id_token_hint", reauthToken).build();
         }
 
         private ClientRegistry generateClientRegistry() {

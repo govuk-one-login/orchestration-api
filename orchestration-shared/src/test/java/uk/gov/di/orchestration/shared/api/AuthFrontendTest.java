@@ -2,7 +2,6 @@ package uk.gov.di.orchestration.shared.api;
 
 import com.nimbusds.oauth2.sdk.ErrorObject;
 import com.nimbusds.oauth2.sdk.OAuth2Error;
-import com.nimbusds.openid.connect.sdk.Prompt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,11 +67,9 @@ class AuthFrontendTest {
     @ParameterizedTest
     @MethodSource("authorizeURICases")
     void authorizeURIReturnsCorrectUri(
-            Optional<Prompt.Type> prompt,
-            Optional<String> googleAnalytics,
-            Map<String, String> expectedQueryParameters) {
+            Optional<String> googleAnalytics, Map<String, String> expectedQueryParameters) {
         var expectedBaseUri = URI.create("https://auth.frontend/authorize");
-        var actualUri = authFrontend.authorizeURI(prompt, googleAnalytics);
+        var actualUri = authFrontend.authorizeURI(googleAnalytics);
         assertThat(actualUri, baseUri(expectedBaseUri));
         assertThat(actualUri, queryParameters(aMapWithSize(expectedQueryParameters.size())));
         for (var entry : expectedQueryParameters.entrySet()) {
@@ -82,18 +79,8 @@ class AuthFrontendTest {
 
     static Stream<Arguments> authorizeURICases() {
         return Stream.of(
-                Arguments.of(Optional.empty(), Optional.empty(), Map.of()),
-                Arguments.of(
-                        Optional.of(Prompt.Type.LOGIN),
-                        Optional.empty(),
-                        Map.of("prompt", "login")),
-                Arguments.of(Optional.empty(), Optional.of("sign-in"), Map.of("result", "sign-in")),
-                Arguments.of(
-                        Optional.of(Prompt.Type.LOGIN),
-                        Optional.of("sign-in"),
-                        Map.of(
-                                "prompt", "login",
-                                "result", "sign-in")));
+                Arguments.of(Optional.empty(), Map.of()),
+                Arguments.of(Optional.of("sign-in"), Map.of("result", "sign-in")));
     }
 
     @Test
