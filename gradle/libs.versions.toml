@@ -3,7 +3,6 @@ awsSdk = "2.51.3"
 junit = "6.1.2"
 pact = "4.7.0"
 spotbugs = "4.10.4"
-xray = "2.21.0"
 
 [libraries]
 apacheCommonsCodec = "commons-codec:commons-codec:1.19.0"
@@ -19,7 +18,6 @@ apacheHttpComponents = "org.apache.httpcomponents.core5:httpcore5:5.4.3"
 approvalTests = "com.approvaltests:approvaltests:31.0.0"
 awaitility = "org.awaitility:awaitility:4.3.0"
 awsCloudwatchEmf = "software.amazon.cloudwatchlogs:aws-embedded-metrics:4.2.0"
-awsCloudwatch = { module = "software.amazon.awssdk:cloudwatch", version.ref = "awsSdk" }
 awsDynamoDbBase = { module = "software.amazon.awssdk:dynamodb", version.ref = "awsSdk" }
 awsDynamoDbEnhanced = { module = "software.amazon.awssdk:dynamodb-enhanced", version.ref = "awsSdk" }
 awsLambdaBase = { module = "software.amazon.awssdk:lambda", version.ref = "awsSdk" }
@@ -28,24 +26,16 @@ awsLambdaEvents = "com.amazonaws:aws-lambda-java-events:3.16.1"
 awsLambdaLog4j = "com.amazonaws:aws-lambda-java-log4j2:1.6.2"
 awsLambdaTests = "com.amazonaws:aws-lambda-java-tests:1.1.2"
 awsKms = { module = "software.amazon.awssdk:kms", version.ref = "awsSdk" }
-awsSecretsManager = { module = "software.amazon.awssdk:secretsmanager", version.ref = "awsSdk" }
 awsSns = { module = "software.amazon.awssdk:sns", version.ref = "awsSdk" }
 awsSqs = { module = "software.amazon.awssdk:sqs", version.ref = "awsSdk" }
 awsSsm = { module = "software.amazon.awssdk:ssm", version.ref = "awsSdk" }
 awsS3 = { module = "software.amazon.awssdk:s3", version.ref = "awsSdk" }
 bouncyCastle = "org.bouncycastle:bcpkix-jdk18on:1.85"
 crac = "org.crac:crac:1.5.0"
-govUkNotify = "uk.gov.service.notify:notifications-java-client:6.0.0-RELEASE"
 gson = "com.google.code.gson:gson:2.14.0"
 hamcrest = "org.hamcrest:hamcrest:3.0"
-jacksonDatabind = "com.fasterxml.jackson.core:jackson-databind:2.22.2"
-javaParser = "com.github.javaparser:javaparser-core:3.28.2"
 javalin = "io.javalin:javalin:7.2.3"
 jetbrainsAnnotations = "org.jetbrains:annotations:26.1.0"
-jetbrainsKotlin = "org.jetbrains.kotlin:kotlin-stdlib:2.4.0"
-jettyServer = "org.eclipse.jetty:jetty-server:12.0.36"
-jgit = "org.eclipse.jgit:org.eclipse.jgit:7.7.1.202607240634-r"
-jsonAssertJ = "net.javacrumbs.json-unit:json-unit-assertj:6.0.1"
 junitPlatform = "org.junit.platform:junit-platform-launcher:6.1.2"
 jupiterApi = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
 jupiterEngine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
@@ -65,14 +55,6 @@ pactProvider = { module = "au.com.dius.pact.provider:junit5", version.ref = "pac
 reflections = "org.reflections:reflections:0.10.2"
 sl4jNop = "org.slf4j:slf4j-nop:2.0.18"
 webcompere = "uk.org.webcompere:system-stubs-jupiter:2.1.8"
-webauthnServer = "com.yubico:webauthn-server-core:2.8.1"
-wiremock = "org.wiremock:wiremock-jetty12:3.13.2"
-xrayBom = { module = "com.amazonaws:aws-xray-recorder-sdk-bom", version.ref = "xray" }
-xrayCore = { module = "com.amazonaws:aws-xray-recorder-sdk-core", version.ref = "xray" }
-xrayAwsSdkInstrumentor = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-instrumentor", version.ref = "xray" }
-xrayAwsSdkCore = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-core", version.ref = "xray" }
-xrayAwsSdkV2 = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2", version.ref = "xray" }
-xrayAwsSdkV2Instrumentor = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2-instrumentor", version.ref = "xray" }
 
 [bundles]
 apache = [
@@ -85,7 +67,6 @@ apache = [
 ]
 awsDynamoDb = ["awsDynamoDbBase", "awsDynamoDbEnhanced"]
 awsLambda = ["awsLambdaBase", "awsLambdaCore", "awsLambdaEvents", "awsLambdaLog4j"]
-lettuce = ["apacheCommonsPool", "lettuceCore"]
 loggingRuntime = ["awsLambdaLog4j", "log4jJsonTemplate", "sl4jNop"]
 nimbus = ["nimbusJwt", "nimbusOidc"]
 test = [
@@ -100,13 +81,6 @@ test = [
     "webcompere"
 ]
 testRuntime = ["jupiterEngine"]
-xray = [
-    "xrayCore",
-    "xrayAwsSdkInstrumentor",
-    "xrayAwsSdkCore",
-    "xrayAwsSdkV2",
-    "xrayAwsSdkV2Instrumentor"
-]
 
 [plugins]
 dockerCompose = "com.avast.gradle.docker-compose:0.17.21"

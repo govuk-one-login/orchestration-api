@@ -18,20 +18,18 @@ dependencies {
             libs.awsS3,
             libs.awsCloudwatchEmf,
             libs.bundles.awsDynamoDb,
-            libs.bundles.lettuce,
             libs.bundles.awsLambda,
             libs.pactProvider
 
-    implementation project(":orchestration-shared"), noXray
-    implementation project(":orchestration-shared-test"), noXray
-    implementation project(":oidc-api"), noXray
-    implementation project(":client-registry-api"), noXray
-    implementation project(":ipv-api"), noXray
-    implementation project(":sis-api"), noXray
-    implementation project(":doc-checking-app-api"), noXray
+    implementation project(":orchestration-shared")
+    implementation project(":orchestration-shared-test")
+    implementation project(":oidc-api")
+    implementation project(":client-registry-api")
+    implementation project(":ipv-api")
+    implementation project(":sis-api")
+    implementation project(":doc-checking-app-api")
 
     testRuntimeOnly libs.bundles.testRuntime
-    testImplementation(libs.wiremock)
 }
 
 test {

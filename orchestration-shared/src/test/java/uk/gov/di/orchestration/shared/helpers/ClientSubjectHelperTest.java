@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import uk.gov.di.orchestration.shared.entity.ClientRegistry;
 import uk.gov.di.orchestration.sharedtest.utils.KeyPairUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.util.Base64;
 import java.util.List;
@@ -211,6 +212,23 @@ class ClientSubjectHelperTest {
                         false);
 
         assertTrue(ClientSubjectHelper.hasValidClientConfig(clientRegistry));
+    }
+
+    // The aim of this test is to act like a contract,
+    // such that we're able to see if changes will result
+    // in us calculating pairwise IDs differently
+    @Test
+    void shouldCreateAGivenSubjectIdGivenSpecificInputs() {
+        var subjectId = "subjectID1234";
+        var sectorHost = "example.com";
+        var salt = "xfD__8O05NRmC970X1tEMzFtzxGxO_Ie8q3pl01WpYE".getBytes(StandardCharsets.UTF_8);
+
+        var pairwiseId =
+                ClientSubjectHelper.calculatePairwiseIdentifier(subjectId, sectorHost, salt);
+
+        // This value is hardcoded to ensure we
+        // consistently calculate pairwise IDs
+        assertEquals("urn:fdc:gov.uk:2022:0Qu5nM-3Yu47vBh7BmrEEQ3KaW8T1aobZJVWDtNMRa8", pairwiseId);
     }
 
     private ClientRegistry generateClientRegistryPairwise(
