@@ -77,6 +77,7 @@ import uk.gov.di.orchestration.sis.service.SISAuthorisationService;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -112,6 +113,7 @@ public class AuthenticationCallbackHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     private static final Logger LOG = LogManager.getLogger(AuthenticationCallbackHandler.class);
+    private final SecureRandom secureRandom;
     private final ConfigurationService configurationService;
     private final AuthenticationAuthorizationService authorisationService;
     private final AuthenticationTokenService tokenService;
@@ -185,6 +187,7 @@ public class AuthenticationCallbackHandler
                         new OrchJwtService(configurationService),
                         auditService,
                         new NowHelper.NowClock(Clock.systemUTC()));
+        this.secureRandom = new SecureRandom();
     }
 
     public AuthenticationCallbackHandler(
@@ -205,7 +208,8 @@ public class AuthenticationCallbackHandler
             LogoutService logoutService,
             AuthFrontend authFrontend,
             CrossBrowserOrchestrationService crossBrowserOrchestrationService,
-            SISAuthorisationService sisAuthorisationService) {
+            SISAuthorisationService sisAuthorisationService,
+            SecureRandom secureRandom) {
         this.configurationService = configurationService;
         this.authorisationService = responseService;
         this.tokenService = tokenService;
@@ -224,6 +228,7 @@ public class AuthenticationCallbackHandler
         this.authFrontend = authFrontend;
         this.crossBrowserOrchestrationService = crossBrowserOrchestrationService;
         this.sisAuthorisationService = sisAuthorisationService;
+        this.secureRandom = secureRandom;
     }
 
     public APIGatewayProxyResponseEvent handleRequest(
@@ -520,7 +525,7 @@ public class AuthenticationCallbackHandler
                 }
 
                 if (identityRequired) {
-                    if (configurationService.isSisEnabled()) {
+                    if (configurationService.isSisEnabled() && shouldRedirectToSis()) {
                         return sisAuthorisationService.sendRequest(
                                 authenticationRequest,
                                 userInfo,
@@ -629,6 +634,10 @@ public class AuthenticationCallbackHandler
             return RedirectService.redirectToFrontendErrorPageForNoSession(
                     authFrontend.sessionEndedURI(), e);
         }
+    }
+
+    private boolean shouldRedirectToSis() {
+        return secureRandom.nextFloat() * 100 < configurationService.getSISRolloutPercentage();
     }
 
     private APIGatewayProxyResponseEvent handleCrossBrowserError(APIGatewayProxyRequestEvent input)
