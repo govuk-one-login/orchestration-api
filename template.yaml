@@ -148,6 +148,7 @@ Mappings:
         }]'
       oidcDomainName: "oidc.dev.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
+      sisRolloutPercentage: 100
     build:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
@@ -183,6 +184,7 @@ Mappings:
         }]'
       oidcDomainName: "oidc.build.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
+      sisRolloutPercentage: 100
     staging:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
@@ -220,6 +222,7 @@ Mappings:
         }]'
       oidcDomainName: "oidc.staging.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
+      sisRolloutPercentage: 100
     integration:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
@@ -255,6 +258,7 @@ Mappings:
         }]'
       oidcDomainName: "oidc.integration.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
+      sisRolloutPercentage: 100
     production:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
@@ -290,6 +294,7 @@ Mappings:
         }]'
       oidcDomainName: "oidc.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
+      sisRolloutPercentage: 20
 
 Globals:
   Function:
@@ -3096,6 +3101,12 @@ Resources:
             - SisEnabled
             - true
             - false
+          SIS_ROLLOUT_PERCENTAGE:
+            !FindInMap [
+              EnvironmentConfiguration,
+              !Ref Environment,
+              sisRolloutPercentage,
+            ]
           SIS_AUDIENCE: !If
             - IpvExists
             - !Sub
