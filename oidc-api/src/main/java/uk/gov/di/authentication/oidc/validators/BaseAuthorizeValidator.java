@@ -224,17 +224,21 @@ public abstract class BaseAuthorizeValidator {
         return Optional.empty();
     }
 
-    protected void validateResponseMode(String responseMode)
-            throws InvalidAuthorizeRequestException {
+    protected Optional<ErrorObject> validateResponseMode(String responseMode) {
+        if (!ErrorObject.isLegal(responseMode)) {
+            var errorMessage = ("Illegal char(s) in response mode");
+            logErrorInProdElseWarn(errorMessage);
+            return Optional.of(new ErrorObject(OAuth2Error.INVALID_REQUEST_CODE, errorMessage));
+        }
         if (!responseMode.equals(ResponseMode.QUERY.getValue())
                 && !responseMode.equals(ResponseMode.FRAGMENT.getValue())) {
             var errorMessage =
                     String.format("Invalid response mode included in request: %s", responseMode);
 
             logErrorInProdElseWarn(errorMessage);
-            throw new InvalidAuthorizeRequestException(
-                    new ErrorObject(OAuth2Error.INVALID_REQUEST_CODE, errorMessage));
+            return Optional.of(new ErrorObject(OAuth2Error.INVALID_REQUEST_CODE, errorMessage));
         }
+        return Optional.empty();
     }
 
     protected Optional<ErrorObject> validateChannel(String channel) {
