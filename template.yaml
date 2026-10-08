@@ -117,7 +117,6 @@ Mappings:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
       architecture: arm64
-      authApiId: "9il43udl10"
       authExternalApiId: "xnmddmx1dj"
       authAccountId: "653994557586"
       newauthAccountId: "975050272416"
@@ -154,7 +153,6 @@ Mappings:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
       architecture: arm64
-      authApiId: "6of9f4amvg"
       authExternalApiId: "w3nit2qina"
       authAccountId: "761723964695"
       newauthAccountId: "058264536367"
@@ -190,7 +188,6 @@ Mappings:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
       architecture: arm64
-      authApiId: "1rvwudxmbk"
       authExternalApiId: "8ttd794ay4"
       authAccountId: "758531536632"
       newauthAccountId: "851725205974"
@@ -228,7 +225,6 @@ Mappings:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
       architecture: arm64
-      authApiId: "k2skqhxed6"
       authExternalApiId: "5wcpjlfg3i"
       authAccountId: "761723964695"
       newauthAccountId: "211125600642"
@@ -264,7 +260,6 @@ Mappings:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
       architecture: arm64
-      authApiId: "s4gj268zy6"
       authExternalApiId: "9k68v07tz7"
       authAccountId: "172348255554"
       newauthAccountId: "211125303002"
@@ -1565,23 +1560,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  OpenIdConfigurationFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref OpenIdConfigurationFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/.well-known/openid-configuration"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   OpenIdConfigurationFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -1721,23 +1699,6 @@ Resources:
           ENVIRONMENT: !Sub ${Environment}
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
-
-  TrustmarkFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref TrustmarkFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/trustmark"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
 
   TrustmarkFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
@@ -2130,23 +2091,6 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref DocAppCallbackFunctionLogGroup
 
-  DocAppCallbackFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref DocAppCallbackFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/doc-app-callback"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   DocAppCallbackFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -2311,23 +2255,6 @@ Resources:
         - !Ref OrchAccessTokenTableWriteAccessPolicy
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
-
-  TokenFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref TokenFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/POST/token"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
 
   TokenFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
@@ -2515,23 +2442,6 @@ Resources:
         - !Ref ClientSessionTableDeleteAccessPolicy
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
-
-  LogoutFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref LogoutFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/logout
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
 
   LogoutFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
@@ -3191,23 +3101,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  AuthenticationCallbackFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref AuthenticationCallbackFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/orchestration-redirect"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   AuthenticationCallbackFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -3409,23 +3302,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  JwksFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref JwksFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/.well-known/jwks.json"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   JwksFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -3560,23 +3436,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  IpvJwksFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref IpvJwksFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/.well-known/ipv-jwks.json"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   IpvJwksFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -3693,23 +3552,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  SISJwksFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref SISJwksFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/.well-known/sis-jwks.json"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   SISJwksFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -3824,23 +3666,6 @@ Resources:
         - !Ref OrchToAuthSigningKmsAccessPolicy
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
-
-  AuthJwksFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref AuthJwksFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/.well-known/auth-jwks.json"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
 
   AuthJwksFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
@@ -4102,23 +3927,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  AuthorisationFunctionCrossAccountGetPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref AuthorisationFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/authorize"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   AuthorisationFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -4296,23 +4104,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  UserInfoFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref UserInfoFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/userinfo"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   UserInfoFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -4487,23 +4278,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  AuthCodeFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref AuthCodeFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/auth-code"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   AuthCodeFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -4671,24 +4445,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  UpdateClientConfigFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Condition: IsNotProduction
-    Properties:
-      FunctionName: !Ref UpdateClientConfigFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/PUT/connect/register/{clientId}"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   UpdateClientConfigFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Condition: IsNotProduction
@@ -4852,24 +4608,6 @@ Resources:
         - !Ref TxmaQueueSendPermissionPolicy
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
-
-  ClientRegistrationFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Condition: IsNotProduction
-    Properties:
-      FunctionName: !Ref ClientRegistrationFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - "arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/POST/connect/register"
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
 
   ClientRegistrationFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
@@ -5589,23 +5327,6 @@ Resources:
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
 
-  IpvCallbackFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref IpvCallbackFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/ipv-callback
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
-
   IpvCallbackFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -6227,23 +5948,6 @@ Resources:
         - !Ref StorageTokenSigningKmsAccessPolicy
       Tags:
         CheckovRulesToSkip: CKV_AWS_115.CKV_AWS_116.CKV_AWS_173
-
-  StorageTokenJwkFunctionCrossAccountPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref StorageTokenJwkFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub
-        - arn:aws:execute-api:eu-west-2:${AccountId}:${ApiId}/*/GET/.well-known/storage-token-jwk.json
-        - AccountId:
-            !FindInMap [
-              EnvironmentConfiguration,
-              !Ref Environment,
-              authAccountId,
-            ]
-          ApiId:
-            !FindInMap [EnvironmentConfiguration, !Ref Environment, authApiId]
 
   StorageTokenJwkFunctionOrchestrationApiPermission:
     Type: AWS::Lambda::Permission
