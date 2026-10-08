@@ -5639,7 +5639,7 @@ Resources:
           - IsNotProduction
           - !Ref SlackEvents
           - !Ref OrchProdSlackEvents
-      AlarmDescription: !Sub "30 or more errors have occurred in the ${Environment} ipv-callback lambda.ACCOUNT: di-orchestration-${Environment}. Runbook: https://govukverify.atlassian.net/wiki/x/JoD2FwE"
+      AlarmDescription: !Sub "100 or more errors have occurred in the ${Environment} ipv-callback lambda.ACCOUNT: di-orchestration-${Environment}. Runbook: https://govukverify.atlassian.net/wiki/x/JoD2FwE"
       AlarmName: !Sub ${Environment}-ipv-callback-alarm
       ComparisonOperator: GreaterThanOrEqualToThreshold
       EvaluationPeriods: 1
@@ -5647,7 +5647,7 @@ Resources:
       Namespace: LambdaErrorsNamespace
       Period: 3600
       Statistic: Sum
-      Threshold: 30
+      Threshold: 100 # TODO: Reduce this threshold back to 30 when the Safari bug is fixed!
 
   IpvCallbackFunctionErrorRateCloudwatchAlarm:
     Type: AWS::CloudWatch::Alarm
