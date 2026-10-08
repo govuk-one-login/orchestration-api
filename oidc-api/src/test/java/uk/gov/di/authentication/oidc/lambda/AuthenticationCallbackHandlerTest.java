@@ -100,6 +100,7 @@ import uk.gov.di.orchestration.shared.services.OrchSessionService;
 import uk.gov.di.orchestration.sis.service.SISAuthorisationService;
 
 import java.net.URI;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -318,7 +319,8 @@ class AuthenticationCallbackHandlerTest {
                         logoutService,
                         authFrontend,
                         CROSS_BROWSER_ORCHESTRATION_SERVICE,
-                        sisAuthorisationService);
+                        sisAuthorisationService,
+                        new SecureRandom());
         orchSession.resetClientSessions();
     }
 
@@ -1127,8 +1129,9 @@ class AuthenticationCallbackHandlerTest {
             }
 
             @Test
-            void shouldRedirectToSISWhenThereIsNoInterventionAndFeatureFlagEnabled() {
+            void shouldRedirectToSISWhenFeatureFlagEnabledAndInsideRolloutPercentage() {
                 when(configurationService.isSisEnabled()).thenReturn(true);
+                when(configurationService.getSISRolloutPercentage()).thenReturn(100);
                 boolean reproveIdentity = false;
                 setUpIntervention(false, false, reproveIdentity, false);
 
@@ -1152,6 +1155,38 @@ class AuthenticationCallbackHandlerTest {
 
                 verifyNoInteractions(logoutService);
                 verifyNoInteractions(initiateIPVAuthorisationService);
+                verify(orchSessionService, times(2))
+                        .updateSession(argThat(OrchSessionItem::getAuthenticated));
+
+                assertNoAuthorisationCodeGeneratedAndSaved();
+            }
+
+            @Test
+            void shouldRedirectToIPVWhenSISEnabledAndOutsideOfRolloutPercentage() {
+                when(configurationService.isSisEnabled()).thenReturn(true);
+                when(configurationService.getSISRolloutPercentage()).thenReturn(0);
+                boolean reproveIdentity = false;
+                setUpIntervention(false, false, reproveIdentity, false);
+
+                var event = new APIGatewayProxyRequestEvent();
+                setValidHeadersAndQueryParameters(event);
+
+                handler.handleRequest(event, CONTEXT);
+
+                verify(initiateIPVAuthorisationService)
+                        .sendRequestToIPV(
+                                any(),
+                                any(),
+                                any(),
+                                any(),
+                                any(),
+                                any(),
+                                any(),
+                                any(),
+                                eq(reproveIdentity),
+                                any(),
+                                eq(false));
+                verifyNoInteractions(logoutService, sisAuthorisationService);
                 verify(orchSessionService, times(2))
                         .updateSession(argThat(OrchSessionItem::getAuthenticated));
 

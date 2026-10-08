@@ -356,8 +356,9 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
     }
 
     @Test
-    void shouldRedirectToSISWhenIdentityRequiredAndSISFeatureFlagEnabled()
-            throws ParseException, JOSEException, java.text.ParseException {
+    void
+            shouldRedirectToSISWhenIdentityRequiredWithSISFeatureFlagEnabledAndInsideOfRolloutPercentage()
+                    throws ParseException, JOSEException, java.text.ParseException {
         setupTestWithSISEnabled();
         setupClientRegByClientIdAndByIdentityVerificationSupported(CLIENT_ID, true);
         var response =
@@ -370,6 +371,24 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
         assertRedirectToSIS(response);
         assertOrchSessionIsUpdatedWithUserInfoClaims();
         assertInformationStoredForNoSessionService(response, false);
+    }
+
+    @Test
+    void
+            shouldRedirectToIPVWhenIdentityRequiredWithSISFeatureFlagEnabledAndOutsideOfRolloutPercentage()
+                    throws ParseException, JOSEException, java.text.ParseException {
+        setupTestWithSISEnabled(0);
+        setupClientRegByClientIdAndByIdentityVerificationSupported(CLIENT_ID, true);
+        var response =
+                makeRequest(
+                        Optional.empty(),
+                        constructHeaders(
+                                Optional.of(buildSessionCookie(SESSION_ID, CLIENT_SESSION_ID))),
+                        constructQueryStringParameters());
+
+        assertRedirectToIpv(response, false);
+        assertOrchSessionIsUpdatedWithUserInfoClaims();
+        assertInformationStoredForNoSessionService(response, true);
     }
 
     @Test
@@ -1104,9 +1123,17 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
     }
 
     private void setupTestWithSISEnabled() {
+        setupTestWithSISEnabled(100);
+    }
+
+    private void setupTestWithSISEnabled(int journeyPercentage) {
         configurationService =
                 new TestConfigurationService(
-                        authExternalApiStub, accountInterventionApiStub, false, true);
+                        authExternalApiStub,
+                        accountInterventionApiStub,
+                        false,
+                        true,
+                        journeyPercentage);
         handler = new AuthenticationCallbackHandler(configurationService);
         authExternalApiStub.init(SUBJECT_ID);
         txmaAuditQueue.clear();
@@ -1145,6 +1172,7 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
         private final AccountInterventionsStubExtension accountInterventionApiStub;
         private final boolean abortOnAisErrorResponse;
         private final boolean isSisEnabled;
+        private final int sisJourneyPercentage;
 
         public TestConfigurationService(
                 AuthExternalApiStubExtension authExternalApiStub,
@@ -1154,19 +1182,22 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
                     authExternalApiStub,
                     accountInterventionsStubExtension,
                     abortOnAisErrorResponse,
-                    false);
+                    false,
+                    100);
         }
 
         public TestConfigurationService(
                 AuthExternalApiStubExtension authExternalApiStub,
                 AccountInterventionsStubExtension accountInterventionsStubExtension,
                 boolean abortOnAisErrorResponse,
-                boolean isSisEnabled) {
+                boolean isSisEnabled,
+                int sisJourneyPercentage) {
             super();
             this.authExternalApiStub = authExternalApiStub;
             this.accountInterventionApiStub = accountInterventionsStubExtension;
             this.abortOnAisErrorResponse = abortOnAisErrorResponse;
             this.isSisEnabled = isSisEnabled;
+            this.sisJourneyPercentage = sisJourneyPercentage;
         }
 
         @Override
@@ -1215,6 +1246,11 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
         @Override
         public String getIPVAuthorisationClientId() {
             return IPV_CLIENT_ID;
+        }
+
+        @Override
+        public Integer getSISRolloutPercentage() {
+            return sisJourneyPercentage;
         }
 
         @Override

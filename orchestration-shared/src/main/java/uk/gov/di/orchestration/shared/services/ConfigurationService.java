@@ -283,6 +283,10 @@ public class ConfigurationService implements BaseLambdaConfiguration, AuditPubli
         return getURLOrThrow("IPV_JWKS_URL");
     }
 
+    public Integer getSISRolloutPercentage() {
+        return Integer.parseInt(System.getenv().getOrDefault("SIS_ROLLOUT_PERCENTAGE", "100"));
+    }
+
     public URI getSISAuthorisationURI() {
         return getURIOrEmpty("SIS_AUTHORISATION_URI");
     }
