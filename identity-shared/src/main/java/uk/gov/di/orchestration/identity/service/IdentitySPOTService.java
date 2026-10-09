@@ -14,19 +14,16 @@ import uk.gov.di.orchestration.shared.api.AuthFrontend;
 import uk.gov.di.orchestration.shared.api.OidcAPI;
 import uk.gov.di.orchestration.shared.entity.AuthUserInfoClaims;
 import uk.gov.di.orchestration.shared.entity.IdentityClaims;
-import uk.gov.di.orchestration.shared.entity.ResponseHeaders;
 import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.AwsSqsClient;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.RedirectService;
 import uk.gov.di.orchestration.shared.services.SerializationService;
 
-import java.util.Map;
 import java.util.Optional;
 
 import static uk.gov.di.orchestration.identity.entity.SPOTAuditableEvent.IPV_SPOT_REQUESTED;
 import static uk.gov.di.orchestration.shared.entity.IdentityClaims.VOT;
-import static uk.gov.di.orchestration.shared.helpers.ApiGatewayResponseHelper.generateApiGatewayProxyResponse;
 
 public class IdentitySPOTService {
     private static final Logger LOG = LogManager.getLogger(IdentitySPOTService.class);
@@ -110,37 +107,24 @@ public class IdentitySPOTService {
         LOG.info("SPOT request placed on queue");
     }
 
-    // This method returns error redirects but ALSO returns the immediate
-    // redirect to the frontend spinner page
-    // Hopefully this doesn't exist for much longer so we can remove it soon
     // We return an empty optional for a successful sync wait for spot
     //  so we can check for interventions, generate an auth code, and emit audit events + metrics
     public Optional<APIGatewayProxyResponseEvent> waitForSpot(
             String clientSessionId, AuditContext auditContext) throws InterruptedException {
-        if (configurationService.isSyncWaitForSpotEnabled()) {
-            var status = identityProgressService.pollForStatus(clientSessionId, auditContext);
-            if (status == IdentityProcessingEndState.NO_ENTRY) {
-                return Optional.of(
-                        RedirectService.redirectToFrontendErrorPageWithErrorLog(
-                                frontend.errorURI(),
-                                new Error("Identity processing returned NO_ENTRY")));
-            }
-            if (status == IdentityProcessingEndState.ERROR) {
-                return Optional.of(
-                        RedirectService.redirectToFrontendErrorPageWithErrorLog(
-                                frontend.errorURI(), new Error("Identity processing failed")));
-            }
-            if (status == IdentityProcessingEndState.COMPLETED) {
-                return Optional.empty();
-            }
-        } else {
-            LOG.info("Successful IPV callback. Redirecting to frontend");
+        var status = identityProgressService.pollForStatus(clientSessionId, auditContext);
+        if (status == IdentityProcessingEndState.NO_ENTRY) {
             return Optional.of(
-                    generateApiGatewayProxyResponse(
-                            302,
-                            "",
-                            Map.of(ResponseHeaders.LOCATION, frontend.ipvCallbackURI().toString()),
-                            null));
+                    RedirectService.redirectToFrontendErrorPageWithErrorLog(
+                            frontend.errorURI(),
+                            new Error("Identity processing returned NO_ENTRY")));
+        }
+        if (status == IdentityProcessingEndState.ERROR) {
+            return Optional.of(
+                    RedirectService.redirectToFrontendErrorPageWithErrorLog(
+                            frontend.errorURI(), new Error("Identity processing failed")));
+        }
+        if (status == IdentityProcessingEndState.COMPLETED) {
+            return Optional.empty();
         }
         return Optional.of(
                 RedirectService.redirectToFrontendErrorPageWithErrorLog(

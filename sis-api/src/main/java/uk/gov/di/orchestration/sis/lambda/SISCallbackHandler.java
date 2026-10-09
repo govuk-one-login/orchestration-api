@@ -474,11 +474,11 @@ public class SISCallbackHandler
     private APIGatewayProxyResponseEvent waitForSPOT(
             IdentityContext identityContext, AuditContext auditContext, TxmaAuditUser user)
             throws InterruptedException {
-        var redirectOpt =
+        var errorRedirectOpt =
                 identitySPOTService.waitForSpot(
                         identityContext.orchClientSessionItem().getClientSessionId(), auditContext);
-        if (redirectOpt.isPresent()) {
-            return redirectOpt.get();
+        if (errorRedirectOpt.isPresent()) {
+            return errorRedirectOpt.get();
         }
         var aisResponse =
                 endOfJourneyService.getAndCheckForIntervention(
