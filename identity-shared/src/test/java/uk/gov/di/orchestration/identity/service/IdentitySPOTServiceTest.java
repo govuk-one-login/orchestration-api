@@ -71,7 +71,6 @@ public class IdentitySPOTServiceTest {
     private static final String BASE_64_ENCODED_SALT = Base64.getEncoder().encodeToString(salt);
     private static final UserInfo AUTH_USER_INFO = generateAuthUserInfo();
     private static final AuditContext AUDIT_CONTEXT = mock(AuditContext.class);
-    private static final String FRONTEND_IPV_CALLBACK_URI = "http://frontend/ipv";
     private static final String FRONTEND_ERROR_URI = "http://frontend/error";
 
     private IdentitySPOTService service;
@@ -84,7 +83,6 @@ public class IdentitySPOTServiceTest {
     void setup() throws Exception {
         // TODO: We might be able to get rid of this flag?
         when(configurationService.isNewSpotRequestQueueWritingEnabled()).thenReturn(true);
-        when(frontend.ipvCallbackURI()).thenReturn(new URI(FRONTEND_IPV_CALLBACK_URI));
         when(frontend.errorURI()).thenReturn(new URI(FRONTEND_ERROR_URI));
         service =
                 new IdentitySPOTService(
@@ -159,18 +157,6 @@ public class IdentitySPOTServiceTest {
 
     @Nested
     class WaitForSPOT {
-
-        @Test
-        void shouldRedirectToFrontendWhenSyncWaitForSPOTDisabled() throws Exception {
-            when(configurationService.isSyncWaitForSpotEnabled()).thenReturn(false);
-
-            var redirectOpt = service.waitForSpot(CLIENT_SESSION_ID, AUDIT_CONTEXT);
-
-            assertTrue(redirectOpt.isPresent());
-            var redirect = redirectOpt.get();
-            assertThat(
-                    redirect.getHeaders().get("Location"), startsWith(FRONTEND_IPV_CALLBACK_URI));
-        }
 
         @Test
         void shouldRedirectToFrontendErrorPageWhenSyncWaitForSPOTReturnsError() throws Exception {
