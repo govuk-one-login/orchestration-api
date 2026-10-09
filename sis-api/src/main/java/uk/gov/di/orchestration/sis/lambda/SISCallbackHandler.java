@@ -85,6 +85,7 @@ public class SISCallbackHandler
     private final OAuthService sisAuthorisationService;
     private final InitiateIPVAuthorisationService ipvAuthorisationService;
     private final IdentitySPOTService identitySPOTService;
+    private final Metrics metrics;
 
     public SISCallbackHandler() {
         this(ConfigurationService.getInstance());
@@ -113,7 +114,8 @@ public class SISCallbackHandler
                                 new OrchAccessTokenService(configurationService),
                                 new OrchRefreshTokenService(configurationService),
                                 new OidcAPI(configurationService))),
-                new IdentitySPOTService(configurationService));
+                new IdentitySPOTService(configurationService),
+                new Metrics(configurationService));
     }
 
     public SISCallbackHandler(
@@ -124,7 +126,8 @@ public class SISCallbackHandler
             EndOfJourneyService endOfJourneyService,
             OAuthService sisAuthorisationService,
             InitiateIPVAuthorisationService ipvAuthorisationService,
-            IdentitySPOTService identitySPOTService) {
+            IdentitySPOTService identitySPOTService,
+            Metrics metrics) {
         this.configurationService = configurationService;
         this.identityCallbackHelper = identityCallbackHelper;
         this.identityContextService = identityContextService;
@@ -133,6 +136,7 @@ public class SISCallbackHandler
         this.sisAuthorisationService = sisAuthorisationService;
         this.ipvAuthorisationService = ipvAuthorisationService;
         this.identitySPOTService = identitySPOTService;
+        this.metrics = metrics;
     }
 
     @Override
@@ -151,6 +155,7 @@ public class SISCallbackHandler
             }
             var identityContextResponse = getIdentityContext(input);
             if (identityContextResponse.earlyRedirect != null) {
+                metrics.increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
                 return identityContextResponse.earlyRedirect;
             }
             var identityContext = identityContextResponse.identityContext;
@@ -193,6 +198,7 @@ public class SISCallbackHandler
             var validationRedirectOpt =
                     validateAuthResponse(input, identityContext, auditContext, user);
             if (validationRedirectOpt.isPresent()) {
+                metrics.increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
                 return validationRedirectOpt.get();
             }
             auditService.submitAuditEventNoPrefix(
@@ -215,6 +221,7 @@ public class SISCallbackHandler
                             user,
                             orchSession.getInternalCommonSubjectId().toString());
             if (redirect.isPresent()) {
+                metrics.increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
                 return redirect.get();
             }
 
@@ -230,6 +237,7 @@ public class SISCallbackHandler
             return identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(
                     new Error("Cannot retrieve auth request params from client session id"));
         } catch (SISCallbackTokenException e) {
+            metrics.increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
             return generateApiGatewayProxyResponse(
                     302,
                     "",
@@ -238,6 +246,7 @@ public class SISCallbackHandler
                             configurationService.getSISErrorUrl().toString()),
                     null);
         } catch (UnsuccessfulCredentialResponseException e) {
+            metrics.increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
             return identityCallbackHelper.redirectToFrontendErrorPageWithWarnLog(e);
         } catch (InterruptedException e) {
             return identityCallbackHelper.redirectToFrontendErrorPageWithErrorLog(
@@ -409,7 +418,6 @@ public class SISCallbackHandler
                             AUTH_AUTH_CODE_ISSUED,
                             identityContext.clientRegistry().getClientID(),
                             user);
-                    // TODO: send cloudwatch metrics for sis journey completed
                     return Optional.ofNullable(
                             generateApiGatewayProxyResponse(
                                     302,
@@ -478,6 +486,7 @@ public class SISCallbackHandler
                 identitySPOTService.waitForSpot(
                         identityContext.orchClientSessionItem().getClientSessionId(), auditContext);
         if (errorRedirectOpt.isPresent()) {
+            metrics.increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
             return errorRedirectOpt.get();
         }
         var aisResponse =
@@ -488,6 +497,7 @@ public class SISCallbackHandler
                         identityContext.clientRegistry().getClientID(),
                         false);
         if (aisResponse.isPresent()) {
+            metrics.increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
             return aisResponse.get();
         }
         var successRedirectUri =
@@ -501,7 +511,7 @@ public class SISCallbackHandler
                         .toURI();
         auditService.submitAuditEventNoPrefix(
                 AUTH_AUTH_CODE_ISSUED, identityContext.clientRegistry().getClientID(), user);
-        // TODO: send cloudwatch metrics for sis journey completed
+        metrics.increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
         return generateApiGatewayProxyResponse(
                 302, "", Map.of(ResponseHeaders.LOCATION, successRedirectUri.toString()), null);
     }
