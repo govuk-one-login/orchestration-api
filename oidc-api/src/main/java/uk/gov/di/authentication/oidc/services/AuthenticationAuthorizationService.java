@@ -30,8 +30,8 @@ import uk.gov.di.orchestration.shared.helpers.ClientSubjectHelper;
 import uk.gov.di.orchestration.shared.helpers.IdGenerator;
 import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.shared.services.TokenValidationService;
 
@@ -71,7 +71,7 @@ public class AuthenticationAuthorizationService {
                 stateStorageService,
                 new OrchestrationAuthorizationService(configurationService),
                 new TokenValidationService(
-                        new JwksService(
+                        new SigningJwkCacheService(
                                 configurationService,
                                 new KmsConnectionService(configurationService)),
                         configurationService),

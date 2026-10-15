@@ -29,14 +29,14 @@ import static com.nimbusds.jose.jwk.Curve.P_256;
 import static software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec.ECDSA_SHA_256;
 import static uk.gov.di.orchestration.shared.helpers.HashHelper.hashSha256String;
 
-public class JwksService {
+public class SigningJwkCacheService {
     private final ConfigurationService configurationService;
     private final KmsConnectionService kmsConnectionService;
     private static final Map<String, JWK> KEY_CACHE = new HashMap<>();
-    private static final Logger LOG = LogManager.getLogger(JwksService.class);
+    private static final Logger LOG = LogManager.getLogger(SigningJwkCacheService.class);
     private final Json objectMapper = SerializationService.getInstance();
 
-    public JwksService(
+    public SigningJwkCacheService(
             ConfigurationService configurationService, KmsConnectionService kmsConnectionService) {
         this.configurationService = configurationService;
         this.kmsConnectionService = kmsConnectionService;

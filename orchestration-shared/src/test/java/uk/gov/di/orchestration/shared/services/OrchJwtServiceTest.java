@@ -42,7 +42,8 @@ class OrchJwtServiceTest {
     private static final String SIGNING_KEY_ALIAS = "test-key-alias";
     private static final String LONG_CLAIM = "1".repeat(5000);
     private final KmsConnectionService kmsConnectionService = mock(KmsConnectionService.class);
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private OrchJwtService orchJwtService;
     private ECKey ecSigningKey;
     private PrivateKey privateEncKey;
@@ -55,13 +56,13 @@ class OrchJwtServiceTest {
                         .keyID(SIGNING_KEY_ID)
                         .algorithm(JWSAlgorithm.ES256)
                         .generate();
-        when(jwksService.getPublicJWKWithKeyId(SIGNING_KEY_ALIAS))
+        when(signingJwkCacheService.getPublicJWKWithKeyId(SIGNING_KEY_ALIAS))
                 .thenReturn(ecSigningKey.toPublicJWK());
         var keyPair = generateRsaKeyPair();
         privateEncKey = keyPair.getPrivate();
         publicEncKey = (RSAPublicKey) keyPair.getPublic();
 
-        orchJwtService = new OrchJwtService(kmsConnectionService, jwksService);
+        orchJwtService = new OrchJwtService(kmsConnectionService, signingJwkCacheService);
     }
 
     @Test

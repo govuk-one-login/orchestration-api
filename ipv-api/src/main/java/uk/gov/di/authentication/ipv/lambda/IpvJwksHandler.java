@@ -9,8 +9,8 @@ import com.nimbusds.jose.jwk.JWKSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,16 +23,16 @@ import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachTraceId
 public class IpvJwksHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
-    private final JwksService jwksService;
+    private final SigningJwkCacheService signingJwkCacheService;
     private static final Logger LOG = LogManager.getLogger(IpvJwksHandler.class);
 
-    public IpvJwksHandler(JwksService jwksService) {
-        this.jwksService = jwksService;
+    public IpvJwksHandler(SigningJwkCacheService signingJwkCacheService) {
+        this.signingJwkCacheService = signingJwkCacheService;
     }
 
     public IpvJwksHandler(ConfigurationService configurationService) {
-        this.jwksService =
-                new JwksService(
+        this.signingJwkCacheService =
+                new SigningJwkCacheService(
                         configurationService, new KmsConnectionService(configurationService));
     }
 
@@ -50,7 +50,7 @@ public class IpvJwksHandler
 
             List<JWK> signingKeys = new ArrayList<>();
 
-            signingKeys.add(jwksService.getPublicIpvTokenJwkWithOpaqueId());
+            signingKeys.add(signingJwkCacheService.getPublicIpvTokenJwkWithOpaqueId());
 
             JWKSet jwkSet = new JWKSet(signingKeys);
 

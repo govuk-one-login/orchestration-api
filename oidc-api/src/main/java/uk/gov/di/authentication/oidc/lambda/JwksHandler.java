@@ -10,8 +10,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,19 +26,21 @@ import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachTraceId
 public class JwksHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
-    private final JwksService jwksService;
+    private final SigningJwkCacheService signingJwkCacheService;
     private final ConfigurationService configurationService;
     private static final Logger LOG = LogManager.getLogger(JwksHandler.class);
 
-    public JwksHandler(ConfigurationService configurationService, JwksService jwksService) {
+    public JwksHandler(
+            ConfigurationService configurationService,
+            SigningJwkCacheService signingJwkCacheService) {
         this.configurationService = configurationService;
-        this.jwksService = jwksService;
+        this.signingJwkCacheService = signingJwkCacheService;
     }
 
     public JwksHandler(ConfigurationService configurationService) {
         this.configurationService = configurationService;
-        this.jwksService =
-                new JwksService(
+        this.signingJwkCacheService =
+                new SigningJwkCacheService(
                         configurationService, new KmsConnectionService(configurationService));
     }
 
@@ -59,12 +61,12 @@ public class JwksHandler
 
             List<JWK> signingKeys = new ArrayList<>();
 
-            signingKeys.add(jwksService.getPublicDocAppSigningJwkWithOpaqueId());
+            signingKeys.add(signingJwkCacheService.getPublicDocAppSigningJwkWithOpaqueId());
 
-            signingKeys.add(jwksService.getNextPublicTokenJwkWithOpaqueIdV2());
+            signingKeys.add(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2());
 
             if (configurationService.isRsaSigningAvailable()) {
-                signingKeys.add(jwksService.getNextPublicTokenRsaJwkWithOpaqueIdV2());
+                signingKeys.add(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2());
             }
 
             JWKSet jwkSet = new JWKSet(signingKeys);

@@ -38,13 +38,13 @@ import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ClientSignatureValidationService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.DynamoClientService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.OrchAccessTokenService;
 import uk.gov.di.orchestration.shared.services.OrchAuthCodeService;
 import uk.gov.di.orchestration.shared.services.OrchClientSessionService;
 import uk.gov.di.orchestration.shared.services.OrchRefreshTokenService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 import uk.gov.di.orchestration.shared.services.TokenService;
 import uk.gov.di.orchestration.shared.services.TokenValidationService;
 import uk.gov.di.orchestration.shared.validation.TokenClientAuthValidator;
@@ -131,7 +131,8 @@ public class TokenHandler
         this.orchClientSessionService = new OrchClientSessionService(configurationService);
         this.tokenValidationService =
                 new TokenValidationService(
-                        new JwksService(configurationService, kms), configurationService);
+                        new SigningJwkCacheService(configurationService, kms),
+                        configurationService);
         this.tokenClientAuthValidatorFactory =
                 new TokenClientAuthValidatorFactory(
                         new DynamoClientService(configurationService),

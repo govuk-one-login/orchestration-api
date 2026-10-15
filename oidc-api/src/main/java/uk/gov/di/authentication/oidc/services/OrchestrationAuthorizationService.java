@@ -24,9 +24,9 @@ import uk.gov.di.orchestration.shared.helpers.PersistentIdHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.DynamoClientService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.OrchJwtService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 
 import java.net.URI;
@@ -79,7 +79,7 @@ public class OrchestrationAuthorizationService {
                 stateStorageService,
                 new OrchJwtService(
                         kmsConnectionService,
-                        new JwksService(configurationService, kmsConnectionService)));
+                        new SigningJwkCacheService(configurationService, kmsConnectionService)));
     }
 
     public boolean isClientRedirectUriValid(ClientID clientID, URI redirectURI)

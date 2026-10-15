@@ -24,10 +24,10 @@ import uk.gov.di.orchestration.shared.services.AuthenticationUserInfoStorageServ
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.DynamoClientService;
 import uk.gov.di.orchestration.shared.services.DynamoIdentityService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.OrchAccessTokenService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 import uk.gov.di.orchestration.shared.services.TokenValidationService;
 
 import java.util.HashMap;
@@ -91,7 +91,7 @@ public class UserInfoHandler
                 new AccessTokenService(
                         new DynamoClientService(configurationService),
                         new TokenValidationService(
-                                new JwksService(
+                                new SigningJwkCacheService(
                                         configurationService,
                                         new KmsConnectionService(configurationService)),
                                 configurationService),

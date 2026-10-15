@@ -9,7 +9,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +24,8 @@ import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyRespons
 class AuthJwksHandlerTest {
     private final Context context = mock(Context.class);
     private final ConfigurationService configurationService = mock(ConfigurationService.class);
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private AuthJwksHandler handler;
     private ECKey authSigningKey;
 
@@ -32,9 +33,10 @@ class AuthJwksHandlerTest {
     void setUp() throws Exception {
         authSigningKey =
                 new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID().toString()).generate();
-        handler = new AuthJwksHandler(configurationService, jwksService);
+        handler = new AuthJwksHandler(configurationService, signingJwkCacheService);
 
-        when(jwksService.getPublicAuthSigningJwkWithOpaqueId()).thenReturn(authSigningKey);
+        when(signingJwkCacheService.getPublicAuthSigningJwkWithOpaqueId())
+                .thenReturn(authSigningKey);
     }
 
     @Test
@@ -50,7 +52,7 @@ class AuthJwksHandlerTest {
 
     @Test
     void shouldReturn500WhenSigningKeyIsNotPresent() {
-        when(jwksService.getPublicAuthSigningJwkWithOpaqueId()).thenReturn(null);
+        when(signingJwkCacheService.getPublicAuthSigningJwkWithOpaqueId()).thenReturn(null);
 
         var event = new APIGatewayProxyRequestEvent();
         var result = handler.handleRequest(event, context);

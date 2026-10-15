@@ -68,12 +68,12 @@ import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.DocAppAuthorisationService;
 import uk.gov.di.orchestration.shared.services.DynamoClientService;
 import uk.gov.di.orchestration.shared.services.JwksCacheService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.OrchClientSessionService;
 import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.OrchSessionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.shared.services.TokenValidationService;
 
@@ -176,7 +176,7 @@ public class AuthorisationHandler
     public AuthorisationHandler(ConfigurationService configurationService) {
         this.configurationService = configurationService;
         var kmsConnectionService = new KmsConnectionService(configurationService);
-        var jwksService = new JwksService(configurationService, kmsConnectionService);
+        var jwksService = new SigningJwkCacheService(configurationService, kmsConnectionService);
         var jwksCacheService = new JwksCacheService(configurationService);
         var stateStorageService = new StateStorageService(configurationService);
         var orchJwtService = new OrchJwtService(configurationService);

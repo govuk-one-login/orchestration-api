@@ -21,12 +21,13 @@ import java.util.Optional;
 
 public class TokenValidationService {
 
-    private final JwksService jwksService;
+    private final SigningJwkCacheService signingJwkCacheService;
     private final ConfigurationService configuration;
     private static final Logger LOG = LogManager.getLogger(TokenValidationService.class);
 
-    public TokenValidationService(JwksService jwksService, ConfigurationService configuration) {
-        this.jwksService = jwksService;
+    public TokenValidationService(
+            SigningJwkCacheService signingJwkCacheService, ConfigurationService configuration) {
+        this.signingJwkCacheService = signingJwkCacheService;
         this.configuration = configuration;
     }
 
@@ -62,10 +63,11 @@ public class TokenValidationService {
 
             if (JWSAlgorithm.RS256 == jwt.getHeader().getAlgorithm()
                     && configuration.isRsaSigningAvailable()) {
-                var newV2PublicKey = jwksService.getNextPublicTokenRsaJwkWithOpaqueIdV2();
+                var newV2PublicKey =
+                        signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2();
                 return jwt.verify(new RSASSAVerifier(newV2PublicKey.toRSAKey()));
             } else {
-                var newV2PublicKey = jwksService.getNextPublicTokenJwkWithOpaqueIdV2();
+                var newV2PublicKey = signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2();
                 return jwt.verify(new ECDSAVerifier(newV2PublicKey.toECKey()));
             }
 
@@ -79,7 +81,7 @@ public class TokenValidationService {
         try {
             var jwt = SignedJWT.parse(tokenValue);
 
-            var newV2PublicKey = jwksService.getNextPublicTokenJwkWithOpaqueIdV2();
+            var newV2PublicKey = signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2();
             if (Objects.equals(jwt.getHeader().getKeyID(), newV2PublicKey.getKeyID())) {
                 return jwt.verify(new ECDSAVerifier(newV2PublicKey.toECKey()));
             } else {
@@ -106,7 +108,7 @@ public class TokenValidationService {
     }
 
     private boolean validateWithOldECPublicKey(SignedJWT jwt) throws JOSEException {
-        var oldStoredPublicKeys = jwksService.getStoredOldPublicTokenJwksWithOpaqueId();
+        var oldStoredPublicKeys = signingJwkCacheService.getStoredOldPublicTokenJwksWithOpaqueId();
         Optional<ECKey> optionalPublicKey =
                 oldStoredPublicKeys.stream()
                         .filter(key -> Objects.equals(jwt.getHeader().getKeyID(), key.getKeyID()))

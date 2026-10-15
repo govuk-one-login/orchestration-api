@@ -38,9 +38,9 @@ import uk.gov.di.orchestration.shared.helpers.IdGenerator;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.DocAppAuthorisationService;
 import uk.gov.di.orchestration.shared.services.JwksCacheService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.OrchJwtService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.sharedtest.helper.TestClockHelper;
 
@@ -89,7 +89,8 @@ class IPVAuthorisationServiceTest {
 
     private final ConfigurationService configurationService = mock(ConfigurationService.class);
     private final KmsConnectionService kmsConnectionService = mock(KmsConnectionService.class);
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private final JwksCacheService jwksCacheService = mock(JwksCacheService.class);
     private final StateStorageService stateStorageService = mock(StateStorageService.class);
     private final OrchJwtService orchJwtService = mock(OrchJwtService.class);
@@ -127,7 +128,7 @@ class IPVAuthorisationServiceTest {
         when(jwksCacheService.getOrGenerateIpvJwksCacheItem())
                 .thenReturn(new JwksCacheItem(jwksUrl.toString(), publicEncKey, 300));
         when(configurationService.getIPVTokenSigningKeyAlias()).thenReturn(IPV_SIGNING_KEY_ID);
-        when(jwksService.getPublicIpvTokenJwkWithOpaqueId())
+        when(signingJwkCacheService.getPublicIpvTokenJwkWithOpaqueId())
                 .thenReturn(
                         new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
                                 .keyID(hashSha256String(IPV_SIGNING_KEY_ID))

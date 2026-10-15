@@ -30,8 +30,8 @@ import uk.gov.di.orchestration.shared.entity.IdentityClaims;
 import uk.gov.di.orchestration.shared.exceptions.UnsuccessfulCredentialResponseException;
 import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.io.IOException;
 import java.net.URI;
@@ -62,7 +62,8 @@ class IPVTokenServiceTest {
 
     private final ConfigurationService configService = mock(ConfigurationService.class);
     private final KmsConnectionService kmsService = mock(KmsConnectionService.class);
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private final UserInfoRequest userInfoRequest = mock(UserInfoRequest.class);
     private final HTTPRequest httpRequest = mock(HTTPRequest.class);
     private final TokenRequest tokenRequest = mock(TokenRequest.class);
@@ -94,14 +95,15 @@ class IPVTokenServiceTest {
 
     @BeforeEach
     void setUp() throws JOSEException {
-        ipvTokenService = spy(new IPVTokenService(configService, kmsService, jwksService));
+        ipvTokenService =
+                spy(new IPVTokenService(configService, kmsService, signingJwkCacheService));
         when(configService.getIPVBackendURI()).thenReturn(IPV_URI);
         when(configService.getIPVAuthorisationClientId()).thenReturn(CLIENT_ID.getValue());
         when(configService.getAccessTokenExpiry()).thenReturn(300L);
         when(configService.getIPVAuthorisationCallbackURI()).thenReturn(REDIRECT_URI);
         when(configService.getIPVAudience()).thenReturn(IPV_URI.toString());
         when(configService.getIPVTokenSigningKeyAlias()).thenReturn(KEY_ID);
-        when(jwksService.getPublicIpvTokenJwkWithOpaqueId())
+        when(signingJwkCacheService.getPublicIpvTokenJwkWithOpaqueId())
                 .thenReturn(
                         new ECKeyGenerator(Curve.P_256)
                                 .keyID(KEY_ID)

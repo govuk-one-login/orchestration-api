@@ -26,8 +26,8 @@ import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 import uk.gov.di.authentication.ipv.services.IPVTokenService;
 import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.net.URI;
 import java.time.Instant;
@@ -47,7 +47,8 @@ import static org.mockito.Mockito.when;
 public class IpvTokenTest {
     private final ConfigurationService configService = mock(ConfigurationService.class);
     private final KmsConnectionService kmsConnectionService = mock(KmsConnectionService.class);
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private IPVTokenService ipvTokenService;
 
     private static final String IPV_AUD = "http://ipv/";
@@ -76,12 +77,13 @@ public class IpvTokenTest {
 
     @BeforeEach
     void setUp() throws JOSEException {
-        ipvTokenService = new IPVTokenService(configService, kmsConnectionService, jwksService);
+        ipvTokenService =
+                new IPVTokenService(configService, kmsConnectionService, signingJwkCacheService);
         when(configService.getIPVAuthorisationClientId()).thenReturn(CLIENT_ID.getValue());
         when(configService.getIPVAudience()).thenReturn(IPV_URI.toString());
         when(configService.getIPVTokenSigningKeyAlias()).thenReturn(KEY_ID);
         when(kmsConnectionService.sign(any(SignRequest.class))).thenReturn(mockKmsReturn());
-        when(jwksService.getPublicIpvTokenJwkWithOpaqueId())
+        when(signingJwkCacheService.getPublicIpvTokenJwkWithOpaqueId())
                 .thenReturn(
                         new ECKeyGenerator(Curve.P_256)
                                 .keyID(KEY_ID)
