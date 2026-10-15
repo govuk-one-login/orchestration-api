@@ -1027,7 +1027,7 @@ public class AuthorisationHandler
                             configurationService.getOidcDomainName()));
         }
 
-        getPrimaryLanguageFromUILocales(authRequest, configurationService)
+        getPrimaryLanguageFromUILocales(authRequest)
                 .ifPresent(
                         primaryLanguage -> {
                             LOG.info("Setting primary language: {}", primaryLanguage.getLanguage());

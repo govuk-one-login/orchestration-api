@@ -106,8 +106,7 @@ class LocaleHelperTest {
             List<LangTag> uiLocales, Optional<SupportedLanguage> primaryLanguage)
             throws LangTagException {
         MatcherAssert.assertThat(
-                LocaleHelper.getPrimaryLanguageFromUILocales(
-                        generateAuthRequest(uiLocales), configurationService),
+                LocaleHelper.getPrimaryLanguageFromUILocales(generateAuthRequest(uiLocales)),
                 equalTo(primaryLanguage));
     }
 

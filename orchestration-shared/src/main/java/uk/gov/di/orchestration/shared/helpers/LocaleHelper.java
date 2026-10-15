@@ -41,8 +41,7 @@ public class LocaleHelper {
     }
 
     public static Optional<SupportedLanguage> getPrimaryLanguageFromUILocales(
-            AuthenticationRequest authenticationRequest,
-            ConfigurationService configurationService) {
+            AuthenticationRequest authenticationRequest) {
 
         if (Objects.isNull(authenticationRequest.getUILocales())) {
             return Optional.empty();
