@@ -3,21 +3,21 @@ package uk.gov.di.orchestration.sharedtest.extensions;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import uk.gov.di.orchestration.shared.entity.JwksCacheItem;
-import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
 import uk.gov.di.orchestration.sharedtest.basetest.DynamoTestConfiguration;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
 
-public class JwksCacheExtension extends DynamoExtension implements AfterEachCallback {
+public class EncryptionJwkCacheExtension extends DynamoExtension implements AfterEachCallback {
     public static final String TABLE_NAME = "local-Jwks-Cache";
     public static final String JWKS_URL_FIELD = "JwksUrl";
     public static final String KEY_ID_FIELD = "KeyId";
     public static final int testTimeout = 123;
-    private final JwksCacheService jwksCacheService;
+    private final EncryptionJwkCacheService encryptionJwkCacheService;
 
-    public JwksCacheExtension() {
+    public EncryptionJwkCacheExtension() {
         createInstance();
         var configurationService =
                 new DynamoTestConfiguration(REGION, ENVIRONMENT, DYNAMO_ENDPOINT) {
@@ -44,7 +44,7 @@ public class JwksCacheExtension extends DynamoExtension implements AfterEachCall
                         }
                     }
                 };
-        jwksCacheService = new JwksCacheService(configurationService);
+        encryptionJwkCacheService = new EncryptionJwkCacheService(configurationService);
     }
 
     @Override
@@ -58,10 +58,10 @@ public class JwksCacheExtension extends DynamoExtension implements AfterEachCall
     }
 
     public JwksCacheItem getOrGenerateJwksCacheItem() {
-        return jwksCacheService.getOrGenerateIpvJwksCacheItem();
+        return encryptionJwkCacheService.getOrGenerateIpvJwksCacheItem();
     }
 
     public void putJwksCacheItem(JwksCacheItem jwksCacheItem) {
-        jwksCacheService.put(jwksCacheItem);
+        encryptionJwkCacheService.put(jwksCacheItem);
     }
 }

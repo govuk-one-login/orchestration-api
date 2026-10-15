@@ -60,7 +60,7 @@ import uk.gov.di.orchestration.shared.services.ClientService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.DynamoClientService;
-import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.LogoutService;
 import uk.gov.di.orchestration.shared.services.Metrics;
@@ -183,7 +183,7 @@ public class AuthenticationCallbackHandler
                         tokenService,
                         stateStorageService,
                         crossBrowserOrchestrationService,
-                        new JwksCacheService(configurationService),
+                        new EncryptionJwkCacheService(configurationService),
                         new OrchJwtService(configurationService),
                         auditService,
                         metrics,

@@ -37,7 +37,7 @@ import uk.gov.di.orchestration.shared.entity.StateItem;
 import uk.gov.di.orchestration.shared.helpers.IdGenerator;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.DocAppAuthorisationService;
-import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
@@ -91,13 +91,14 @@ class IPVAuthorisationServiceTest {
     private final KmsConnectionService kmsConnectionService = mock(KmsConnectionService.class);
     private final SigningJwkCacheService signingJwkCacheService =
             mock(SigningJwkCacheService.class);
-    private final JwksCacheService jwksCacheService = mock(JwksCacheService.class);
+    private final EncryptionJwkCacheService encryptionJwkCacheService =
+            mock(EncryptionJwkCacheService.class);
     private final StateStorageService stateStorageService = mock(StateStorageService.class);
     private final OrchJwtService orchJwtService = mock(OrchJwtService.class);
     private final IPVAuthorisationService authorisationService =
             new IPVAuthorisationService(
                     configurationService,
-                    jwksCacheService,
+                    encryptionJwkCacheService,
                     stateStorageService,
                     orchJwtService,
                     TestClockHelper.getInstance());
@@ -125,7 +126,7 @@ class IPVAuthorisationServiceTest {
                         .build();
         var jwksUrl = new URL("http://localhost/.well-known/jwks.json");
         when(configurationService.getIPVJwksUrl()).thenReturn(jwksUrl);
-        when(jwksCacheService.getOrGenerateIpvJwksCacheItem())
+        when(encryptionJwkCacheService.getOrGenerateIpvJwksCacheItem())
                 .thenReturn(new JwksCacheItem(jwksUrl.toString(), publicEncKey, 300));
         when(configurationService.getIPVTokenSigningKeyAlias()).thenReturn(IPV_SIGNING_KEY_ID);
         when(signingJwkCacheService.getPublicIpvTokenJwkWithOpaqueId())

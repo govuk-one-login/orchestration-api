@@ -51,7 +51,7 @@ import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.sharedtest.basetest.ApiGatewayHandlerIntegrationTest;
 import uk.gov.di.orchestration.sharedtest.extensions.ClientStoreExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.CrossBrowserStorageExtension;
-import uk.gov.di.orchestration.sharedtest.extensions.JwksCacheExtension;
+import uk.gov.di.orchestration.sharedtest.extensions.EncryptionJwkCacheExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.JwksExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.OrchClientSessionExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.OrchSessionExtension;
@@ -129,7 +129,8 @@ class AuthorisationIntegrationTest extends ApiGatewayHandlerIntegrationTest {
     @RegisterExtension public static final JwksExtension jwksExtension = new JwksExtension();
 
     @RegisterExtension
-    public static final JwksCacheExtension jwksCacheExtension = new JwksCacheExtension();
+    public static final EncryptionJwkCacheExtension encryptionJwkCacheExtension =
+            new EncryptionJwkCacheExtension();
 
     @RegisterExtension
     public static final RpPublicKeyCacheExtension rpPublicKeyCacheExtension =

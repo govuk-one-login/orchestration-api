@@ -50,7 +50,7 @@ import uk.gov.di.orchestration.sharedtest.extensions.AccountInterventionsStubExt
 import uk.gov.di.orchestration.sharedtest.extensions.AuthExternalApiStubExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.AuthenticationCallbackUserInfoStoreExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.CrossBrowserStorageExtension;
-import uk.gov.di.orchestration.sharedtest.extensions.JwksCacheExtension;
+import uk.gov.di.orchestration.sharedtest.extensions.EncryptionJwkCacheExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.JwksExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.OrchAuthCodeExtension;
 import uk.gov.di.orchestration.sharedtest.extensions.OrchClientSessionExtension;
@@ -147,7 +147,8 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
     @RegisterExtension public static final JwksExtension sisJwksExtension = new JwksExtension();
 
     @RegisterExtension
-    public static final JwksCacheExtension jwksCacheExtension = new JwksCacheExtension();
+    public static final EncryptionJwkCacheExtension encryptionJwkCacheExtension =
+            new EncryptionJwkCacheExtension();
 
     @RegisterExtension
     public static final CrossBrowserStorageExtension crossBrowserStorageExtension =

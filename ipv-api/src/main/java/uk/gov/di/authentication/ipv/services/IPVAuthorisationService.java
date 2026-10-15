@@ -18,7 +18,7 @@ import uk.gov.di.orchestration.shared.helpers.IdGenerator;
 import uk.gov.di.orchestration.shared.helpers.NowHelper.NowClock;
 import uk.gov.di.orchestration.shared.helpers.RsaKeyHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
 import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 
@@ -33,7 +33,7 @@ public class IPVAuthorisationService {
 
     private static final Logger LOG = LogManager.getLogger(IPVAuthorisationService.class);
     private final ConfigurationService configurationService;
-    private final JwksCacheService jwksCacheService;
+    private final EncryptionJwkCacheService encryptionJwkCacheService;
     private final StateStorageService stateStorageService;
     private final OrchJwtService orchJwtService;
     private final NowClock nowClock;
@@ -43,7 +43,7 @@ public class IPVAuthorisationService {
     public IPVAuthorisationService(ConfigurationService configurationService) {
         this(
                 configurationService,
-                new JwksCacheService(configurationService),
+                new EncryptionJwkCacheService(configurationService),
                 new StateStorageService(configurationService),
                 new OrchJwtService(configurationService),
                 new NowClock(Clock.systemUTC()));
@@ -51,12 +51,12 @@ public class IPVAuthorisationService {
 
     public IPVAuthorisationService(
             ConfigurationService configurationService,
-            JwksCacheService jwksCacheService,
+            EncryptionJwkCacheService encryptionJwkCacheService,
             StateStorageService stateStorageService,
             OrchJwtService orchJwtService,
             NowClock nowClock) {
         this.configurationService = configurationService;
-        this.jwksCacheService = jwksCacheService;
+        this.encryptionJwkCacheService = encryptionJwkCacheService;
         this.stateStorageService = stateStorageService;
         this.orchJwtService = orchJwtService;
         this.nowClock = nowClock;
@@ -180,6 +180,6 @@ public class IPVAuthorisationService {
 
     private JwksCacheItem getJwksCacheItemFromJwksEndpoint() {
         LOG.info("Getting IPV Encryption JWK via JWKS endpoint");
-        return jwksCacheService.getOrGenerateIpvJwksCacheItem();
+        return encryptionJwkCacheService.getOrGenerateIpvJwksCacheItem();
     }
 }

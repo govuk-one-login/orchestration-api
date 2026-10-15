@@ -33,7 +33,7 @@ import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.DocAppAuthorisationService;
-import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.OrchAuthCodeService;
@@ -119,7 +119,7 @@ public class DocAppCallbackHandler
         this.authorisationService =
                 new DocAppAuthorisationService(
                         configurationService,
-                        new JwksCacheService(configurationService),
+                        new EncryptionJwkCacheService(configurationService),
                         new StateStorageService(configurationService),
                         new OrchJwtService(configurationService));
         this.tokenService =

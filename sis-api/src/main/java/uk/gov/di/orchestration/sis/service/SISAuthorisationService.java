@@ -23,7 +23,7 @@ import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
-import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
 import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
@@ -52,7 +52,7 @@ public class SISAuthorisationService {
     private final TokenService tokenService;
     private final StateStorageService stateStorageService;
     private final CrossBrowserOrchestrationService crossBrowserOrchestrationService;
-    private final JwksCacheService jwksCacheService;
+    private final EncryptionJwkCacheService encryptionJwkCacheService;
     private final OrchJwtService orchJwtService;
     private final AuditService auditService;
     private final Metrics metrics;
@@ -63,7 +63,7 @@ public class SISAuthorisationService {
             TokenService tokenService,
             StateStorageService stateStorageService,
             CrossBrowserOrchestrationService crossBrowserOrchestrationService,
-            JwksCacheService jwksCacheService,
+            EncryptionJwkCacheService encryptionJwkCacheService,
             OrchJwtService orchJwtService,
             AuditService auditService,
             Metrics metrics,
@@ -72,7 +72,7 @@ public class SISAuthorisationService {
         this.tokenService = tokenService;
         this.stateStorageService = stateStorageService;
         this.crossBrowserOrchestrationService = crossBrowserOrchestrationService;
-        this.jwksCacheService = jwksCacheService;
+        this.encryptionJwkCacheService = encryptionJwkCacheService;
         this.orchJwtService = orchJwtService;
         this.auditService = auditService;
         this.metrics = metrics;
@@ -192,7 +192,8 @@ public class SISAuthorisationService {
 
     private RSAPublicKey getPublicEncryptionKey() {
         LOG.info("Getting SIS Encryption JWK via JWKS endpoint");
-        return getRsaPublicKeyFromJwksCacheItem(jwksCacheService.getOrGenerateSISJwksCacheItem());
+        return getRsaPublicKeyFromJwksCacheItem(
+                encryptionJwkCacheService.getOrGenerateSISJwksCacheItem());
     }
 
     private ClaimsSetRequest buildClaimsRequest(

@@ -10,7 +10,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import uk.gov.di.orchestration.shared.entity.JwksCacheItem;
 import uk.gov.di.orchestration.shared.utils.JwksUtils;
-import uk.gov.di.orchestration.sharedtest.extensions.JwksCacheExtension;
+import uk.gov.di.orchestration.sharedtest.extensions.EncryptionJwkCacheExtension;
 
 import java.net.URL;
 import java.security.interfaces.RSAPublicKey;
@@ -19,12 +19,13 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.gov.di.orchestration.sharedtest.utils.KeyPairUtils.generateRsaKeyPair;
 
-public class JwksCacheServiceIntegrationTest {
+public class EncryptionJwkCacheServiceIntegrationTest {
     private static final long VALID_TTL = Instant.now().plusSeconds(100).getEpochSecond();
     private static final String JWKS_URL = "http://localhost/.well-known/jwks.json";
 
     @RegisterExtension
-    public static final JwksCacheExtension jwksCacheExtension = new JwksCacheExtension();
+    public static final EncryptionJwkCacheExtension encryptionJwkCache =
+            new EncryptionJwkCacheExtension();
 
     @Test
     void shouldGetFirstKeyIfMultipleSigningKeys() {
@@ -33,10 +34,10 @@ public class JwksCacheServiceIntegrationTest {
         var key1 = new JwksCacheItem(JWKS_URL, jwk1, VALID_TTL);
         var key2 = new JwksCacheItem(JWKS_URL, jwk2, VALID_TTL);
 
-        jwksCacheExtension.putJwksCacheItem(key1);
-        jwksCacheExtension.putJwksCacheItem(key2);
+        encryptionJwkCache.putJwksCacheItem(key1);
+        encryptionJwkCache.putJwksCacheItem(key2);
 
-        var encKey = jwksCacheExtension.getOrGenerateJwksCacheItem();
+        var encKey = encryptionJwkCache.getOrGenerateJwksCacheItem();
 
         assertEquals("test-enc-key-1", encKey.getKeyId());
     }
@@ -48,7 +49,7 @@ public class JwksCacheServiceIntegrationTest {
                     .when(() -> JwksUtils.getKey(new URL(JWKS_URL), KeyUse.ENCRYPTION))
                     .thenReturn(createPublicJwk("test-enc-key"));
 
-            var encKey = jwksCacheExtension.getOrGenerateJwksCacheItem();
+            var encKey = encryptionJwkCache.getOrGenerateJwksCacheItem();
 
             assertEquals("test-enc-key", encKey.getKeyId());
         }

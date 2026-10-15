@@ -25,7 +25,7 @@ public class DocAppAuthorisationService {
 
     private static final Logger LOG = LogManager.getLogger(DocAppAuthorisationService.class);
     private final ConfigurationService configurationService;
-    private final JwksCacheService jwksCacheService;
+    private final EncryptionJwkCacheService encryptionJwkCacheService;
     private final StateStorageService stateStorageService;
     private final OrchJwtService orchJwtService;
     private final NowHelper.NowClock nowClock;
@@ -35,12 +35,12 @@ public class DocAppAuthorisationService {
 
     public DocAppAuthorisationService(
             ConfigurationService configurationService,
-            JwksCacheService jwksCacheService,
+            EncryptionJwkCacheService encryptionJwkCacheService,
             StateStorageService stateStorageService,
             OrchJwtService orchJwtService,
             Clock clock) {
         this.configurationService = configurationService;
-        this.jwksCacheService = jwksCacheService;
+        this.encryptionJwkCacheService = encryptionJwkCacheService;
         this.stateStorageService = stateStorageService;
         this.orchJwtService = orchJwtService;
         this.nowClock = new NowHelper.NowClock(clock);
@@ -48,11 +48,11 @@ public class DocAppAuthorisationService {
 
     public DocAppAuthorisationService(
             ConfigurationService configurationService,
-            JwksCacheService jwksCacheService,
+            EncryptionJwkCacheService encryptionJwkCacheService,
             StateStorageService stateStorageService,
             OrchJwtService orchJwtService) {
         this.configurationService = configurationService;
-        this.jwksCacheService = jwksCacheService;
+        this.encryptionJwkCacheService = encryptionJwkCacheService;
         this.stateStorageService = stateStorageService;
         this.orchJwtService = orchJwtService;
         this.nowClock = new NowHelper.NowClock(Clock.systemUTC());
@@ -161,6 +161,6 @@ public class DocAppAuthorisationService {
 
     private JwksCacheItem getPublicEncryptionKey() {
         LOG.info("Getting Doc App Auth Encryption Public Key via JWKS endpoint");
-        return jwksCacheService.getOrGenerateDocAppJwksCacheItem();
+        return encryptionJwkCacheService.getOrGenerateDocAppJwksCacheItem();
     }
 }

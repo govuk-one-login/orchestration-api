@@ -88,13 +88,14 @@ class DocAppAuthorisationServiceTest {
 
     private final ConfigurationService configurationService = mock(ConfigurationService.class);
     private final KmsConnectionService kmsConnectionService = mock(KmsConnectionService.class);
-    private final JwksCacheService jwksCacheService = mock(JwksCacheService.class);
+    private final EncryptionJwkCacheService encryptionJwkCacheService =
+            mock(EncryptionJwkCacheService.class);
     private final StateStorageService stateStorageService = mock(StateStorageService.class);
     private final OrchJwtService orchJwtService = mock(OrchJwtService.class);
     private final DocAppAuthorisationService authorisationService =
             new DocAppAuthorisationService(
                     configurationService,
-                    jwksCacheService,
+                    encryptionJwkCacheService,
                     stateStorageService,
                     orchJwtService,
                     FIXED_CLOCK);
@@ -240,7 +241,7 @@ class DocAppAuthorisationServiceTest {
         var state = new State();
         var pairwise = new Subject("pairwise-identifier");
         when(clientRegistry.isTestClient()).thenReturn(isTestClient);
-        when(jwksCacheService.getOrGenerateDocAppJwksCacheItem())
+        when(encryptionJwkCacheService.getOrGenerateDocAppJwksCacheItem())
                 .thenReturn(new JwksCacheItem(JWKS_URL.toString(), publicEncryptionRsaKey, 300));
 
         authorisationService.constructRequestJWT(
@@ -292,7 +293,7 @@ class DocAppAuthorisationServiceTest {
             var state = new State("state");
             var pairwise = new Subject("pairwise-identifier");
             when(clientRegistry.isTestClient()).thenReturn(isTestClient);
-            when(jwksCacheService.getOrGenerateDocAppJwksCacheItem())
+            when(encryptionJwkCacheService.getOrGenerateDocAppJwksCacheItem())
                     .thenReturn(
                             new JwksCacheItem(JWKS_URL.toString(), publicEncryptionRsaKey, 300));
 
@@ -327,7 +328,7 @@ class DocAppAuthorisationServiceTest {
         var state = new State();
         var pairwise = new Subject("pairwise-identifier");
 
-        when(jwksCacheService.getOrGenerateDocAppJwksCacheItem())
+        when(encryptionJwkCacheService.getOrGenerateDocAppJwksCacheItem())
                 .thenReturn(new JwksCacheItem(JWKS_URL.toString(), publicEncryptionRsaKey, 300));
 
         authorisationService.constructRequestJWT(

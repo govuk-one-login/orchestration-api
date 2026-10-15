@@ -31,7 +31,7 @@ import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
-import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
 import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
@@ -101,7 +101,8 @@ class SISAuthorisationServiceTest {
     private final StateStorageService stateStorageService = mock(StateStorageService.class);
     private final CrossBrowserOrchestrationService crossBrowserOrchestrationService =
             mock(CrossBrowserOrchestrationService.class);
-    private final JwksCacheService jwksCacheService = mock(JwksCacheService.class);
+    private final EncryptionJwkCacheService encryptionJwkCacheService =
+            mock(EncryptionJwkCacheService.class);
     private final OrchJwtService orchJwtService = mock(OrchJwtService.class);
     private final AuditService auditService = mock(AuditService.class);
     private final Metrics metrics = mock(Metrics.class);
@@ -124,7 +125,7 @@ class SISAuthorisationServiceTest {
         publicEncKey = publicEncJwk.toRSAPublicKey();
         var jwksUrl = new URL("http://localhost/.well-known/jwks.json");
         when(configurationService.getSISJwksUrl()).thenReturn(jwksUrl);
-        when(jwksCacheService.getOrGenerateSISJwksCacheItem())
+        when(encryptionJwkCacheService.getOrGenerateSISJwksCacheItem())
                 .thenReturn(new JwksCacheItem(jwksUrl.toString(), publicEncJwk, 300));
         when(configurationService.getSISTokenSigningKeyAlias()).thenReturn(SIS_SIGNING_KEY_ALIAS);
         when(configurationService.getStorageTokenClaimName())
@@ -141,7 +142,7 @@ class SISAuthorisationServiceTest {
                         tokenService,
                         stateStorageService,
                         crossBrowserOrchestrationService,
-                        jwksCacheService,
+                        encryptionJwkCacheService,
                         orchJwtService,
                         auditService,
                         metrics,
