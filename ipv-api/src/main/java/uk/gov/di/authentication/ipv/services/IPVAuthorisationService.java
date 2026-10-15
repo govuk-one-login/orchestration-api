@@ -19,7 +19,7 @@ import uk.gov.di.orchestration.shared.helpers.NowHelper.NowClock;
 import uk.gov.di.orchestration.shared.helpers.RsaKeyHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 
 import java.security.interfaces.RSAPublicKey;
@@ -35,7 +35,7 @@ public class IPVAuthorisationService {
     private final ConfigurationService configurationService;
     private final EncryptionJwkCacheService encryptionJwkCacheService;
     private final StateStorageService stateStorageService;
-    private final OrchJwtService orchJwtService;
+    private final JwtService jwtService;
     private final NowClock nowClock;
     public static final String STATE_STORAGE_PREFIX = "state:";
     public static final String SESSION_INVALIDATED_ERROR_CODE = "session_invalidated";
@@ -45,7 +45,7 @@ public class IPVAuthorisationService {
                 configurationService,
                 new EncryptionJwkCacheService(configurationService),
                 new StateStorageService(configurationService),
-                new OrchJwtService(configurationService),
+                new JwtService(configurationService),
                 new NowClock(Clock.systemUTC()));
     }
 
@@ -53,12 +53,12 @@ public class IPVAuthorisationService {
             ConfigurationService configurationService,
             EncryptionJwkCacheService encryptionJwkCacheService,
             StateStorageService stateStorageService,
-            OrchJwtService orchJwtService,
+            JwtService jwtService,
             NowClock nowClock) {
         this.configurationService = configurationService;
         this.encryptionJwkCacheService = encryptionJwkCacheService;
         this.stateStorageService = stateStorageService;
-        this.orchJwtService = orchJwtService;
+        this.jwtService = jwtService;
         this.nowClock = nowClock;
     }
 
@@ -172,7 +172,7 @@ public class IPVAuthorisationService {
         LOG.info("Encrypted request JWT has been generated");
         RSAPublicKey publicEncryptionKey =
                 RsaKeyHelper.getRsaPublicKeyFromJwksCacheItem(getJwksCacheItemFromJwksEndpoint());
-        return orchJwtService.signAndEncryptJWT(
+        return jwtService.signAndEncryptJWT(
                 claimsBuilder.build(),
                 configurationService.getIPVTokenSigningKeyAlias(),
                 publicEncryptionKey);

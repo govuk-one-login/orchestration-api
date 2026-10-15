@@ -23,7 +23,7 @@ import uk.gov.di.orchestration.shared.entity.StateItem;
 import uk.gov.di.orchestration.shared.exceptions.UnsuccessfulCredentialResponseException;
 import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.sharedtest.helper.Constants;
 
@@ -65,7 +65,7 @@ public class OAuthServiceTest {
                     Constants.TEST_PRIVATE_KEY_JWT_AUDIENCE,
                     Constants.TEST_STATE_PREFIX);
 
-    private final OrchJwtService jwtService = mock(OrchJwtService.class);
+    private final JwtService jwtService = mock(JwtService.class);
     private final StateStorageService stateStorageService = mock(StateStorageService.class);
     private final CrossBrowserOrchestrationService crossBrowserOrchestrationService =
             mock(CrossBrowserOrchestrationService.class);

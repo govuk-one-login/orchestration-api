@@ -38,8 +38,8 @@ import uk.gov.di.orchestration.shared.helpers.IdGenerator;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.DocAppAuthorisationService;
 import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.sharedtest.helper.TestClockHelper;
@@ -94,13 +94,13 @@ class IPVAuthorisationServiceTest {
     private final EncryptionJwkCacheService encryptionJwkCacheService =
             mock(EncryptionJwkCacheService.class);
     private final StateStorageService stateStorageService = mock(StateStorageService.class);
-    private final OrchJwtService orchJwtService = mock(OrchJwtService.class);
+    private final JwtService jwtService = mock(JwtService.class);
     private final IPVAuthorisationService authorisationService =
             new IPVAuthorisationService(
                     configurationService,
                     encryptionJwkCacheService,
                     stateStorageService,
-                    orchJwtService,
+                    jwtService,
                     TestClockHelper.getInstance());
     private PrivateKey privateKey;
     private RSAKey publicEncKey;
@@ -325,7 +325,7 @@ class IPVAuthorisationServiceTest {
                         false);
             }
             var captor = ArgumentCaptor.forClass(JWTClaimsSet.class);
-            verify(orchJwtService)
+            verify(jwtService)
                     .signAndEncryptJWT(
                             captor.capture(),
                             eq(IPV_SIGNING_KEY_ID),
@@ -365,7 +365,7 @@ class IPVAuthorisationServiceTest {
                         false,
                         false);
             }
-            verify(orchJwtService)
+            verify(jwtService)
                     .signAndEncryptJWT(
                             argThat(
                                     claims -> {
@@ -398,7 +398,7 @@ class IPVAuthorisationServiceTest {
                         false,
                         false);
             }
-            verify(orchJwtService)
+            verify(jwtService)
                     .signAndEncryptJWT(
                             argThat(claims -> !claims.getClaims().containsKey("reprove_identity")),
                             eq(IPV_SIGNING_KEY_ID),
@@ -421,7 +421,7 @@ class IPVAuthorisationServiceTest {
                         null,
                         false);
             }
-            verify(orchJwtService)
+            verify(jwtService)
                     .signAndEncryptJWT(
                             argThat(claims -> !claims.getClaims().containsKey("reprove_identity")),
                             eq(IPV_SIGNING_KEY_ID),
@@ -443,7 +443,7 @@ class IPVAuthorisationServiceTest {
                         false,
                         true);
             }
-            verify(orchJwtService)
+            verify(jwtService)
                     .signAndEncryptJWT(
                             argThat(claims -> claims.getClaims().containsKey("update_identity")),
                             eq(IPV_SIGNING_KEY_ID),

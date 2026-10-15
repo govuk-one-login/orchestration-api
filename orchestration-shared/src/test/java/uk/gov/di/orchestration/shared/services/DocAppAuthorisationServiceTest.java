@@ -91,13 +91,13 @@ class DocAppAuthorisationServiceTest {
     private final EncryptionJwkCacheService encryptionJwkCacheService =
             mock(EncryptionJwkCacheService.class);
     private final StateStorageService stateStorageService = mock(StateStorageService.class);
-    private final OrchJwtService orchJwtService = mock(OrchJwtService.class);
+    private final JwtService jwtService = mock(JwtService.class);
     private final DocAppAuthorisationService authorisationService =
             new DocAppAuthorisationService(
                     configurationService,
                     encryptionJwkCacheService,
                     stateStorageService,
-                    orchJwtService,
+                    jwtService,
                     FIXED_CLOCK);
     private PrivateKey privateEncryptionKey;
     private RSAKey publicEncryptionRsaKey;
@@ -248,7 +248,7 @@ class DocAppAuthorisationServiceTest {
                 state, pairwise.getValue(), clientRegistry, "client-session-id");
 
         var captor = ArgumentCaptor.forClass(JWTClaimsSet.class);
-        verify(orchJwtService)
+        verify(jwtService)
                 .signAndEncryptJWT(
                         captor.capture(),
                         eq(KEY_ALIAS),
@@ -304,7 +304,7 @@ class DocAppAuthorisationServiceTest {
                         state, pairwise.getValue(), clientRegistry, "client-session-id");
             }
             var captor = ArgumentCaptor.forClass(JWTClaimsSet.class);
-            verify(orchJwtService)
+            verify(jwtService)
                     .signAndEncryptJWT(
                             captor.capture(),
                             eq(KEY_ALIAS),
@@ -334,7 +334,7 @@ class DocAppAuthorisationServiceTest {
         authorisationService.constructRequestJWT(
                 state, pairwise.getValue(), clientRegistry, "client-session-id");
         var captor = ArgumentCaptor.forClass(JWTClaimsSet.class);
-        verify(orchJwtService)
+        verify(jwtService)
                 .signAndEncryptJWT(
                         captor.capture(),
                         eq(KEY_ALIAS),

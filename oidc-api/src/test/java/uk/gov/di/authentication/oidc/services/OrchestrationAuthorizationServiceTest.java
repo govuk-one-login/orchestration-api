@@ -26,7 +26,7 @@ import uk.gov.di.orchestration.shared.helpers.CookieHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.DynamoClientService;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.sharedtest.logging.CaptureLoggingExtension;
 
@@ -66,7 +66,7 @@ class OrchestrationAuthorizationServiceTest {
     private final CrossBrowserOrchestrationService crossBrowserOrchestrationService =
             mock(CrossBrowserOrchestrationService.class);
     private final StateStorageService stateStorageService = mock(StateStorageService.class);
-    private final OrchJwtService orchJwtService = mock(OrchJwtService.class);
+    private final JwtService jwtService = mock(JwtService.class);
     private RSAPublicKey publicEncryptionKey;
 
     @RegisterExtension
@@ -81,7 +81,7 @@ class OrchestrationAuthorizationServiceTest {
                         dynamoClientService,
                         crossBrowserOrchestrationService,
                         stateStorageService,
-                        orchJwtService);
+                        jwtService);
         var keyPair = generateRsaKeyPair();
         var publicCertificateAsPem =
                 "-----BEGIN PUBLIC KEY-----\n"
@@ -194,8 +194,7 @@ class OrchestrationAuthorizationServiceTest {
 
         orchestrationAuthorizationService.getSignedAndEncryptedJWT(jwtClaimsSet);
 
-        verify(orchJwtService)
-                .signAndEncryptJWT(jwtClaimsSet, SIGNING_KEY_ALIAS, publicEncryptionKey);
+        verify(jwtService).signAndEncryptJWT(jwtClaimsSet, SIGNING_KEY_ALIAS, publicEncryptionKey);
     }
 
     @Test

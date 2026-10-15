@@ -27,7 +27,7 @@ public class DocAppAuthorisationService {
     private final ConfigurationService configurationService;
     private final EncryptionJwkCacheService encryptionJwkCacheService;
     private final StateStorageService stateStorageService;
-    private final OrchJwtService orchJwtService;
+    private final JwtService jwtService;
     private final NowHelper.NowClock nowClock;
     public static final String STATE_STORAGE_PREFIX = "state:";
 
@@ -37,12 +37,12 @@ public class DocAppAuthorisationService {
             ConfigurationService configurationService,
             EncryptionJwkCacheService encryptionJwkCacheService,
             StateStorageService stateStorageService,
-            OrchJwtService orchJwtService,
+            JwtService jwtService,
             Clock clock) {
         this.configurationService = configurationService;
         this.encryptionJwkCacheService = encryptionJwkCacheService;
         this.stateStorageService = stateStorageService;
-        this.orchJwtService = orchJwtService;
+        this.jwtService = jwtService;
         this.nowClock = new NowHelper.NowClock(clock);
     }
 
@@ -50,11 +50,11 @@ public class DocAppAuthorisationService {
             ConfigurationService configurationService,
             EncryptionJwkCacheService encryptionJwkCacheService,
             StateStorageService stateStorageService,
-            OrchJwtService orchJwtService) {
+            JwtService jwtService) {
         this.configurationService = configurationService;
         this.encryptionJwkCacheService = encryptionJwkCacheService;
         this.stateStorageService = stateStorageService;
-        this.orchJwtService = orchJwtService;
+        this.jwtService = jwtService;
         this.nowClock = new NowHelper.NowClock(Clock.systemUTC());
     }
 
@@ -153,7 +153,7 @@ public class DocAppAuthorisationService {
         }
         var publicEncryptionKey =
                 RsaKeyHelper.getRsaPublicKeyFromJwksCacheItem(getPublicEncryptionKey());
-        return orchJwtService.signAndEncryptJWT(
+        return jwtService.signAndEncryptJWT(
                 claimsBuilder.build(),
                 configurationService.getDocAppTokenSigningKeyAlias(),
                 publicEncryptionKey);

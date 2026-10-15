@@ -24,8 +24,8 @@ import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.Metrics;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.shared.services.TokenService;
 import uk.gov.di.orchestration.sis.exception.SISCallbackValidationError;
@@ -53,7 +53,7 @@ public class SISAuthorisationService {
     private final StateStorageService stateStorageService;
     private final CrossBrowserOrchestrationService crossBrowserOrchestrationService;
     private final EncryptionJwkCacheService encryptionJwkCacheService;
-    private final OrchJwtService orchJwtService;
+    private final JwtService jwtService;
     private final AuditService auditService;
     private final Metrics metrics;
     private final NowHelper.NowClock nowClock;
@@ -64,7 +64,7 @@ public class SISAuthorisationService {
             StateStorageService stateStorageService,
             CrossBrowserOrchestrationService crossBrowserOrchestrationService,
             EncryptionJwkCacheService encryptionJwkCacheService,
-            OrchJwtService orchJwtService,
+            JwtService jwtService,
             AuditService auditService,
             Metrics metrics,
             NowHelper.NowClock nowClock) {
@@ -73,7 +73,7 @@ public class SISAuthorisationService {
         this.stateStorageService = stateStorageService;
         this.crossBrowserOrchestrationService = crossBrowserOrchestrationService;
         this.encryptionJwkCacheService = encryptionJwkCacheService;
-        this.orchJwtService = orchJwtService;
+        this.jwtService = jwtService;
         this.auditService = auditService;
         this.metrics = metrics;
         this.nowClock = nowClock;
@@ -184,7 +184,7 @@ public class SISAuthorisationService {
         }
         claimsBuilder.claim("claims", claimsRequest.toJSONObject());
         LOG.info("Encrypted request JWT has been generated");
-        return orchJwtService.signAndEncryptJWT(
+        return jwtService.signAndEncryptJWT(
                 claimsBuilder.build(),
                 configurationService.getSISTokenSigningKeyAlias(),
                 getPublicEncryptionKey());

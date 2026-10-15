@@ -32,8 +32,8 @@ import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.Metrics;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.shared.services.TokenService;
 
@@ -103,7 +103,7 @@ class SISAuthorisationServiceTest {
             mock(CrossBrowserOrchestrationService.class);
     private final EncryptionJwkCacheService encryptionJwkCacheService =
             mock(EncryptionJwkCacheService.class);
-    private final OrchJwtService orchJwtService = mock(OrchJwtService.class);
+    private final JwtService jwtService = mock(JwtService.class);
     private final AuditService auditService = mock(AuditService.class);
     private final Metrics metrics = mock(Metrics.class);
     private SISAuthorisationService authorisationService;
@@ -143,7 +143,7 @@ class SISAuthorisationServiceTest {
                         stateStorageService,
                         crossBrowserOrchestrationService,
                         encryptionJwkCacheService,
-                        orchJwtService,
+                        jwtService,
                         auditService,
                         metrics,
                         new NowHelper.NowClock(Clock.fixed(NOW, ZoneOffset.UTC)));
@@ -200,7 +200,7 @@ class SISAuthorisationServiceTest {
             }
             var captor = ArgumentCaptor.forClass(JWTClaimsSet.class);
 
-            verify(orchJwtService)
+            verify(jwtService)
                     .signAndEncryptJWT(
                             captor.capture(), eq(SIS_SIGNING_KEY_ALIAS), eq(publicEncKey));
             var actualClaims = captor.getValue();
@@ -232,7 +232,7 @@ class SISAuthorisationServiceTest {
         @Test
         void shouldReturn302AndRedirectURIWithClaims() throws Exception {
             var dummyJwt = createDummyJwt();
-            when(orchJwtService.signAndEncryptJWT(any(), anyString(), any())).thenReturn(dummyJwt);
+            when(jwtService.signAndEncryptJWT(any(), anyString(), any())).thenReturn(dummyJwt);
             var authRequest = createAuthenticationRequest(claimsSetRequest);
             var userInfo = generateUserInfo();
             var response =

@@ -31,21 +31,21 @@ import java.text.ParseException;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.JWT_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachLogFieldToLogs;
 
-public class OrchJwtService {
-    private static final Logger LOG = LogManager.getLogger(OrchJwtService.class);
+public class JwtService {
+    private static final Logger LOG = LogManager.getLogger(JwtService.class);
     private static final JWSAlgorithm SIGNING_ALGORITHM = JWSAlgorithm.ES256;
 
     private final KmsConnectionService kmsConnectionService;
     private final SigningJwkCacheService signingJwkCacheService;
 
-    public OrchJwtService(ConfigurationService configurationService) {
+    public JwtService(ConfigurationService configurationService) {
         this(
                 new KmsConnectionService(configurationService),
                 new SigningJwkCacheService(
                         configurationService, new KmsConnectionService(configurationService)));
     }
 
-    public OrchJwtService(
+    public JwtService(
             KmsConnectionService kmsConnectionService,
             SigningJwkCacheService signingJwkCacheService) {
         this.kmsConnectionService = kmsConnectionService;

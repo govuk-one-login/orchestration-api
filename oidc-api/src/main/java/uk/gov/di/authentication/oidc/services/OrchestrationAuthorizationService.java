@@ -24,8 +24,8 @@ import uk.gov.di.orchestration.shared.helpers.PersistentIdHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.DynamoClientService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 
@@ -42,7 +42,7 @@ public class OrchestrationAuthorizationService {
     private final DynamoClientService dynamoClientService;
     private final CrossBrowserOrchestrationService crossBrowserOrchestrationService;
     private final StateStorageService stateStorageService;
-    private final OrchJwtService orchJwtService;
+    private final JwtService jwtService;
     private static final Logger LOG = LogManager.getLogger(OrchestrationAuthorizationService.class);
 
     public OrchestrationAuthorizationService(
@@ -50,12 +50,12 @@ public class OrchestrationAuthorizationService {
             DynamoClientService dynamoClientService,
             CrossBrowserOrchestrationService crossBrowserOrchestrationService,
             StateStorageService stateStorageService,
-            OrchJwtService orchJwtService) {
+            JwtService jwtService) {
         this.configurationService = configurationService;
         this.dynamoClientService = dynamoClientService;
         this.crossBrowserOrchestrationService = crossBrowserOrchestrationService;
         this.stateStorageService = stateStorageService;
-        this.orchJwtService = orchJwtService;
+        this.jwtService = jwtService;
     }
 
     public OrchestrationAuthorizationService(ConfigurationService configurationService) {
@@ -64,7 +64,7 @@ public class OrchestrationAuthorizationService {
                 new DynamoClientService(configurationService),
                 new CrossBrowserOrchestrationService(configurationService),
                 new StateStorageService(configurationService),
-                new OrchJwtService(configurationService));
+                new JwtService(configurationService));
     }
 
     public OrchestrationAuthorizationService(
@@ -77,7 +77,7 @@ public class OrchestrationAuthorizationService {
                 new DynamoClientService(configurationService),
                 crossBrowserOrchestrationService,
                 stateStorageService,
-                new OrchJwtService(
+                new JwtService(
                         kmsConnectionService,
                         new SigningJwkCacheService(configurationService, kmsConnectionService)));
     }
@@ -113,7 +113,7 @@ public class OrchestrationAuthorizationService {
     }
 
     public EncryptedJWT getSignedAndEncryptedJWT(JWTClaimsSet jwtClaimsSet) {
-        return orchJwtService.signAndEncryptJWT(
+        return jwtService.signAndEncryptJWT(
                 jwtClaimsSet, configurationService.getAuthSigningKeyAlias(), getPublicKey());
     }
 
