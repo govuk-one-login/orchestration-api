@@ -1,7 +1,6 @@
 package uk.gov.di.orchestration.shared.services;
 
 import com.google.gson.reflect.TypeToken;
-import com.nimbusds.jose.KeySourceException;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyUse;
@@ -11,10 +10,8 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.kms.model.GetPublicKeyRequest;
 import software.amazon.awssdk.services.kms.model.GetPublicKeyResponse;
 import uk.gov.di.orchestration.shared.serialization.Json;
-import uk.gov.di.orchestration.shared.utils.JwksUtils;
 
 import java.lang.reflect.Type;
-import java.net.URL;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -92,10 +89,6 @@ public class JwksService {
     public JWK getPublicAuthSigningJwkWithOpaqueId() {
         LOG.info("Retrieving Auth public signing key");
         return getPublicJWKWithKeyId(configurationService.getAuthSigningKeyAlias());
-    }
-
-    public JWK retrieveJwkFromURLWithKeyId(URL url, String keyId) throws KeySourceException {
-        return JwksUtils.retrieveJwkFromURLWithKeyId(url, keyId);
     }
 
     JWK getPublicJWKWithKeyId(String keyId) {
