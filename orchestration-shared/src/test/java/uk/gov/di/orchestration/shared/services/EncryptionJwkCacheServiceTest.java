@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.orchestration.sharedtest.utils.KeyPairUtils.generateRsaKeyPair;
 
@@ -31,9 +32,9 @@ class EncryptionJwkCacheServiceTest extends BaseDynamoServiceTest<JwksCacheItem>
     private static final String KEY_ID_2 = "test-enc-key-2";
     private static final JWK JWK_1 = createPublicJwk(KEY_ID_1);
     private static final JWK JWK_2 = createPublicJwk(KEY_ID_2);
-    private static final int expiryInSeconds = 100;
+    private static final int EXPIRY_IN_SECONDS = 100;
     private static final long VALID_TTL =
-            Instant.now().plusSeconds(expiryInSeconds).getEpochSecond();
+            Instant.now().plusSeconds(EXPIRY_IN_SECONDS).getEpochSecond();
     private static final MockedStatic<JwksUtils> jwksUtilsMockedStatic =
             Mockito.mockStatic(JwksUtils.class);
     private EncryptionJwkCacheService encryptionJwkCacheServiceSpy;
@@ -42,11 +43,11 @@ class EncryptionJwkCacheServiceTest extends BaseDynamoServiceTest<JwksCacheItem>
     void setup() throws MalformedURLException {
         EncryptionJwkCacheService encryptionJwkCacheService =
                 new EncryptionJwkCacheService(dynamoDbClient, table, configurationService);
-        encryptionJwkCacheServiceSpy = Mockito.spy(encryptionJwkCacheService);
+        encryptionJwkCacheServiceSpy = spy(encryptionJwkCacheService);
         URL testJwksUrl = new URL(JWKS_URL);
         when(configurationService.getIPVJwksUrl()).thenReturn(testJwksUrl);
         when(configurationService.getDocAppJwksUrl()).thenReturn(testJwksUrl);
-        when(configurationService.getJwkCacheExpirationInSeconds()).thenReturn(expiryInSeconds);
+        when(configurationService.getJwkCacheExpirationInSeconds()).thenReturn(EXPIRY_IN_SECONDS);
     }
 
     @AfterAll

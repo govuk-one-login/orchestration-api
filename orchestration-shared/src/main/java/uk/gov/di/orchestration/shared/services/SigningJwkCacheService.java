@@ -21,6 +21,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.nimbusds.jose.JWSAlgorithm.ES256;
@@ -42,7 +43,7 @@ public class SigningJwkCacheService {
         this.kmsConnectionService = kmsConnectionService;
     }
 
-    public ArrayList<ECKey> getStoredOldPublicTokenJwksWithOpaqueId() {
+    public List<ECKey> getStoredOldPublicTokenJwksWithOpaqueId() {
         try {
             LOG.info("Retrieving stored EC public key");
             Type listType = new TypeToken<ArrayList<ECKey>>() {}.getType();

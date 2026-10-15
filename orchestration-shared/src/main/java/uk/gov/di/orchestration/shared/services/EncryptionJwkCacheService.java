@@ -72,7 +72,7 @@ public class EncryptionJwkCacheService extends BaseDynamoService<JwksCacheItem> 
         if (jwkCacheItem.isEmpty()) {
             LOG.info(
                     "Cache entry does not exist for JWKS URL {}, creating new one with expiration of {} seconds",
-                    url.toString(),
+                    url,
                     timeToLive);
             JwksCacheItem newJwksCacheItem = createJwks(url);
             storeKey(newJwksCacheItem);
