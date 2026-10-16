@@ -149,6 +149,7 @@ Mappings:
       oidcDomainName: "oidc.dev.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
       sisRolloutPercentage: 100
+      logRetentionInDays: 30
     build:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
@@ -184,6 +185,7 @@ Mappings:
       oidcDomainName: "oidc.build.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
       sisRolloutPercentage: 100
+      logRetentionInDays: 30
     staging:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
@@ -221,6 +223,7 @@ Mappings:
       oidcDomainName: "oidc.staging.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
       sisRolloutPercentage: 100
+      logRetentionInDays: 30
     integration:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
@@ -256,6 +259,7 @@ Mappings:
       oidcDomainName: "oidc.integration.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
       sisRolloutPercentage: 100
+      logRetentionInDays: 30
     production:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
       dynatraceLayerArn: arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_331_39_20260206-150338_with_collector_java_arm:1
@@ -291,6 +295,7 @@ Mappings:
       oidcDomainName: "oidc.account.gov.uk"
       serviceNameForKeyRotationStack: "orch"
       sisRolloutPercentage: 20
+      logRetentionInDays: 183 # 6 months in days, rounded up
 
 Globals:
   Function:
@@ -1424,7 +1429,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-fetch-jwks-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   FetchJwksSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -1575,7 +1585,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-openid-configuration-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   OpenIdConfigurationSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -1715,7 +1730,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-trustmark-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   TrustmarkSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -1860,7 +1880,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-backchannel-logout-request-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   BackChannelLogoutRequestSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -2081,7 +2106,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-doc-app-callback-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   DocAppSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -2271,7 +2301,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-token-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   TokenSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -2458,7 +2493,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-logout-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   LogoutFunctionSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -2619,7 +2659,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-global-logout-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   GlobalLogoutFunctionSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -3116,7 +3161,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-authentication-callback-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   AuthenticationCallbackSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -3317,7 +3367,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-jwks-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   JwksSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -3451,7 +3506,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-ipv-jwks-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   IpvJwksSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -3567,7 +3627,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-sis-jwks-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   SISJwksSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -3682,7 +3747,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-auth-jwks-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   AuthJwksSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -3942,7 +4012,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-authorisation-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   AuthorisationSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -4119,7 +4194,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-userinfo-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   UserInfoFunctionSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -4293,7 +4373,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-auth-code-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   AuthCodeFunctionSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -4462,7 +4547,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-update-client-config-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   UpdateClientConfigFunctionSubscriptionFilter:
     Condition: IsNotDevOrProd
@@ -4626,7 +4716,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-register-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   ClientRegistrationFunctionSubscriptionFilter:
     Condition: IsNotDevOrProd
@@ -5030,7 +5125,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-sis-callback-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   SISCallbackFunctionSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -5342,7 +5442,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-ipv-callback-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   IpvCallbackFunctionSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -5489,7 +5594,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-manual-update-client-registry-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   ManualUpdateClientRegistryFunctionManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -5770,7 +5880,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-spot-response-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   SpotResponseFunctionSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -5964,7 +6079,12 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${Environment}-storage-token-jwk-lambda
       KmsKeyId: !GetAtt MainKmsKey.Arn
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   StorageTokenJwkFunctionSubscriptionFilter:
     Condition: IsNotDevEnvironment
@@ -6150,7 +6270,12 @@ Resources:
     Properties:
       KmsKeyId: !GetAtt MainKmsKey.Arn
       LogGroupName: !Sub "${Environment}-orchestration-oidc-api-access-logs"
-      RetentionInDays: 30
+      RetentionInDays:
+        !FindInMap [
+          EnvironmentConfiguration,
+          !Ref Environment,
+          logRetentionInDays,
+        ]
 
   ClientRegistryApiKey:
     Condition: IsNotProduction

@@ -1,6 +1,6 @@
 ---
 metadata:
-  name: "Ensure all CloudWatch log retention periods are set to 30 days"
+  name: "Ensure all CloudWatch log retention periods are set to 6 months at most"
   guideline: "https://govukverify.atlassian.net/browse/DIP-93"
   id: "CKV2_AWS_901"
   category: "LOGGING"
@@ -11,5 +11,5 @@ definition:
   resource_types:
     - "AWS::Logs::LogGroup"
   attribute: "RetentionInDays"
-  operator: "equals"
-  value: 30
+  less_than_or_equal: "equals"
+  value: 183
