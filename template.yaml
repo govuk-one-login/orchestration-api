@@ -8441,7 +8441,7 @@ Resources:
 
   #endregion
 
-  #region External Token signing keys
+  #region Current external Token signing keys
 
   OrchExternalTokenEcSigningKmsKeyV2:
     Type: AWS::KMS::Key
@@ -8492,6 +8492,58 @@ Resources:
     Properties:
       AliasName: !Sub "alias/${Environment}-orch-external-token-rsa-signing-kms-key-alias-v2"
       TargetKeyId: !Ref OrchExternalTokenRsaSigningKmsKeyV2
+
+  #region Next external Token signing keys
+
+  OrchExternalTokenEcSigningKmsKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: KMS signing key for signing external tokens issued to RPs. This key is specifically for use in signing with EC based algorithms.
+      PendingWindowInDays: 30
+      KeyUsage: SIGN_VERIFY
+      KeySpec: ECC_NIST_P256
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowIamManagement
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: "*"
+
+  OrchExternalTokenEcSigningKmsKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${Environment}-orch-external-token-ec-signing-kms-key-alias"
+      TargetKeyId: !Ref OrchExternalTokenEcSigningKmsKey
+
+  OrchExternalTokenRsaSigningKmsKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: KMS signing key for signing external tokens issued to RPs. This key is specifically for use in signing with RSA based algorithms.
+      PendingWindowInDays: 30
+      KeyUsage: SIGN_VERIFY
+      KeySpec: RSA_4096
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowIamManagement
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: "*"
+
+  OrchExternalTokenRsaSigningKmsKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${Environment}-orch-external-token-rsa-signing-kms-key-alias"
+      TargetKeyId: !Ref OrchExternalTokenRsaSigningKmsKey
 
   #endregion
 
