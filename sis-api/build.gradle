@@ -10,7 +10,8 @@ dependencies {
     compileOnly libs.bundles.awsLambda
 
     implementation libs.gson,
-            libs.bundles.nimbus
+            libs.bundles.nimbus,
+            libs.crac
 
     implementation project(":orchestration-shared")
     implementation project(":identity-shared")
