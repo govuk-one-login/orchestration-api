@@ -155,6 +155,8 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
     private static final String CLIENT_NAME = "test-client-name";
     private static final URI REDIRECT_URI = URI.create("http://localhost/redirect");
     private static final Subject SUBJECT_ID = new Subject();
+    private static final String IPV_JWKS_ENDPOINT = "/.well-known/ipv.jwks";
+    private static final String SIS_JWKS_ENDPOINT = "/.well-known/sis.jwks";
     private static final String IPV_CLIENT_ID = "ipv-client-id";
     private static final String IPV_AUTHORISATION_URI = "https://ipv.gov.uk/authorize";
     private static final String SIS_CLIENT_ID = "sis-client-id";
@@ -173,13 +175,13 @@ public class AuthenticationCallbackHandlerIntegrationTest extends ApiGatewayHand
                         .keyUse(KeyUse.ENCRYPTION)
                         .keyID("ipv-test-key-id")
                         .build();
-        ipvJwksExtension.init(new JWKSet(ipvRsaKey));
+        ipvJwksExtension.init(IPV_JWKS_ENDPOINT, new JWKSet(ipvRsaKey));
         var sisRsaKey =
                 new RSAKey.Builder((RSAPublicKey) sisKeyPair.getPublic())
                         .keyUse(KeyUse.ENCRYPTION)
                         .keyID("sis-test-key-id")
                         .build();
-        sisJwksExtension.init(new JWKSet(sisRsaKey));
+        sisJwksExtension.init(SIS_JWKS_ENDPOINT, new JWKSet(sisRsaKey));
     }
 
     @BeforeEach()
