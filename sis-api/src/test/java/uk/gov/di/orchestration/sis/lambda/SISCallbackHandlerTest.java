@@ -55,6 +55,7 @@ import uk.gov.di.orchestration.shared.oauth.OAuthService;
 import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.EndOfJourneyService;
+import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.RedirectService;
 import uk.gov.di.orchestration.sis.exception.SISCallbackValidationError;
 
@@ -101,6 +102,7 @@ public class SISCallbackHandlerTest {
     private final InitiateIPVAuthorisationService ipvAuthorisationService =
             mock(InitiateIPVAuthorisationService.class);
     private final IdentitySPOTService identitySpotService = mock(IdentitySPOTService.class);
+    private final Metrics metrics = mock(Metrics.class);
 
     private static final URI FRONT_END_ERROR_URI = URI.create("https://example.com/error");
     private static final URI FRONT_END_SESSION_ENDED_URI =
@@ -158,7 +160,6 @@ public class SISCallbackHandlerTest {
             new AccessTokenResponse(new Tokens(new BearerAccessToken(), null));
     private static final TokenErrorResponse UNSUCCESSFUL_TOKEN_RESPONSE =
             new TokenErrorResponse(new ErrorObject("token error"));
-    private static final URI SIS_BACKEND_URI = URI.create("http://sis-backend");
 
     private final OrchSessionItem orchSession =
             new OrchSessionItem(SESSION_ID)
@@ -231,7 +232,8 @@ public class SISCallbackHandlerTest {
                         endOfJourneyService,
                         sisAuthorisationService,
                         ipvAuthorisationService,
-                        identitySpotService);
+                        identitySpotService,
+                        metrics);
     }
 
     @Test
@@ -242,7 +244,9 @@ public class SISCallbackHandlerTest {
         var response = handler.handleRequest(request, context);
 
         assertDoesRedirectToPage(response, FRONT_END_ERROR_URI.toString());
+
         verifyNoInteractions(auditService);
+        verifyNoInteractions(metrics);
     }
 
     @Test
@@ -256,6 +260,9 @@ public class SISCallbackHandlerTest {
 
         assertDoesRedirectToPage(response, REDIRECT_URI.toString());
         assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
+
+        verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+        verifyNoMoreInteractions(metrics);
     }
 
     @Test
@@ -267,7 +274,9 @@ public class SISCallbackHandlerTest {
         var response = handler.handleRequest(request, context);
 
         assertDoesRedirectToPage(response, FRONT_END_SESSION_ENDED_URI.toString());
+
         verifyNoInteractions(auditService);
+        verifyNoInteractions(metrics);
     }
 
     @Test
@@ -281,6 +290,9 @@ public class SISCallbackHandlerTest {
 
         assertDoesRedirectToPage(response, REDIRECT_URI.toString());
         assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
+
+        verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+        verifyNoMoreInteractions(metrics);
     }
 
     @Test
@@ -291,7 +303,9 @@ public class SISCallbackHandlerTest {
 
         var response = handler.handleRequest(request, context);
         assertDoesRedirectToPage(response, FRONT_END_ERROR_URI.toString());
+
         verifyNoInteractions(auditService);
+        verifyNoInteractions(metrics);
     }
 
     @Nested
@@ -311,6 +325,9 @@ public class SISCallbackHandlerTest {
 
             assertDoesRedirectToPage(response, IPV_URI.toString());
             assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         @Test
@@ -334,6 +351,9 @@ public class SISCallbackHandlerTest {
 
             assertDoesRedirectToPage(response, IPV_URI.toString());
             assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         @Test
@@ -352,6 +372,9 @@ public class SISCallbackHandlerTest {
 
             assertDoesRedirectToPage(response, FRONT_END_AIS_LOGOUT_URL);
             assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         @Test
@@ -375,6 +398,9 @@ public class SISCallbackHandlerTest {
                             + "&state="
                             + authRequestWithNoClaims.getState());
             assertAuditEventsSubmitted(ORCH_SIS_UNSUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         private void mockIpvRedirect(APIGatewayProxyRequestEvent request, boolean updateRequested) {
@@ -430,6 +456,9 @@ public class SISCallbackHandlerTest {
             assertAuditEventsSubmitted(
                     ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         @Test
@@ -447,6 +476,9 @@ public class SISCallbackHandlerTest {
                     ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         @Test
@@ -468,6 +500,9 @@ public class SISCallbackHandlerTest {
                     ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         @Nested
@@ -527,6 +562,9 @@ public class SISCallbackHandlerTest {
                         ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
                         ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED,
                         AUTH_AUTH_CODE_ISSUED);
+
+                verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+                verifyNoMoreInteractions(metrics);
             }
 
             @Test
@@ -558,6 +596,9 @@ public class SISCallbackHandlerTest {
                         ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
                         ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
                         ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+
+                verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+                verifyNoMoreInteractions(metrics);
             }
 
             private void mockValidationFailedWithReturnCodeClaim() throws Exception {
@@ -605,6 +646,9 @@ public class SISCallbackHandlerTest {
                     ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         @Test
@@ -622,6 +666,8 @@ public class SISCallbackHandlerTest {
                     ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+
+            verifyNoInteractions(metrics);
         }
 
         @Test
@@ -641,6 +687,9 @@ public class SISCallbackHandlerTest {
                     ORCH_SIS_SUCCESSFUL_AUTHORISATION_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         @Test
@@ -667,6 +716,9 @@ public class SISCallbackHandlerTest {
                     ORCH_SIS_SUCCESSFUL_TOKEN_RESPONSE_RECEIVED,
                     ORCH_SIS_SUCCESSFUL_IDENTITY_RESPONSE_RECEIVED,
                     AUTH_AUTH_CODE_ISSUED);
+
+            verify(metrics).increment("orchJourneyCompleted", Map.of("journeyType", "sis"));
+            verifyNoMoreInteractions(metrics);
         }
 
         private void mockSuccessfulSpotResponse() throws Exception {

@@ -24,6 +24,7 @@ import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.shared.services.TokenService;
@@ -54,6 +55,7 @@ public class SISAuthorisationService {
     private final JwksCacheService jwksCacheService;
     private final OrchJwtService orchJwtService;
     private final AuditService auditService;
+    private final Metrics metrics;
     private final NowHelper.NowClock nowClock;
 
     public SISAuthorisationService(
@@ -64,6 +66,7 @@ public class SISAuthorisationService {
             JwksCacheService jwksCacheService,
             OrchJwtService orchJwtService,
             AuditService auditService,
+            Metrics metrics,
             NowHelper.NowClock nowClock) {
         this.configurationService = configurationService;
         this.tokenService = tokenService;
@@ -72,6 +75,7 @@ public class SISAuthorisationService {
         this.jwksCacheService = jwksCacheService;
         this.orchJwtService = orchJwtService;
         this.auditService = auditService;
+        this.metrics = metrics;
         this.nowClock = nowClock;
     }
 
@@ -133,7 +137,8 @@ public class SISAuthorisationService {
                         .withPersistentSessionId(persistentSessionCookieId),
                 pair("clientLandingPageUrl", landingPageUrl),
                 pair("rpPairwiseId", rpPairwiseId));
-        // TODO: Add cloudwatch metric for SISHandoff
+        metrics.increment(
+                "SISHandoff", Map.of("Environment", configurationService.getEnvironment()));
         LOG.info(
                 "Successfully processed SIS authorisation request, redirect URI {}",
                 sisAuthRequest.toURI().toString());

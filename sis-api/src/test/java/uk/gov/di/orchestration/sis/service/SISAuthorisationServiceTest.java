@@ -32,6 +32,7 @@ import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.shared.services.TokenService;
@@ -65,6 +66,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyResponseEventMatcher.hasStatus;
 import static uk.gov.di.orchestration.sharedtest.utils.JwtUtils.createDummyJwt;
@@ -101,6 +104,7 @@ class SISAuthorisationServiceTest {
     private final JwksCacheService jwksCacheService = mock(JwksCacheService.class);
     private final OrchJwtService orchJwtService = mock(OrchJwtService.class);
     private final AuditService auditService = mock(AuditService.class);
+    private final Metrics metrics = mock(Metrics.class);
     private SISAuthorisationService authorisationService;
 
     private RSAPublicKey publicEncKey;
@@ -126,6 +130,7 @@ class SISAuthorisationServiceTest {
         when(configurationService.getStorageTokenClaimName())
                 .thenReturn("https://vocab.account.gov.uk/v1/storageAccessToken");
         when(configurationService.getSISAuthorisationURI()).thenReturn(SIS_AUTHORISATION_URI);
+        when(configurationService.getEnvironment()).thenReturn("test");
 
         when(tokenService.generateStorageToken(any(), eq(SIS_URI.toString())))
                 .thenReturn(storageToken);
@@ -139,6 +144,7 @@ class SISAuthorisationServiceTest {
                         jwksCacheService,
                         orchJwtService,
                         auditService,
+                        metrics,
                         new NowHelper.NowClock(Clock.fixed(NOW, ZoneOffset.UTC)));
     }
 
@@ -168,6 +174,7 @@ class SISAuthorisationServiceTest {
                             "Expected to throw exception");
 
             assertThat(exception.getMessage(), equalTo("Identity is not enabled"));
+            verifyNoInteractions(metrics);
         }
 
         @Test
@@ -247,6 +254,8 @@ class SISAuthorisationServiceTest {
             verify(stateStorageService).storeState(eq("sis-state:" + SESSION_ID), anyString());
             verify(crossBrowserOrchestrationService)
                     .storeClientSessionIdAgainstState(eq(CLIENT_SESSION_ID), any(State.class));
+            verify(metrics).increment("SISHandoff", Map.of("Environment", "test"));
+            verifyNoMoreInteractions(metrics);
         }
 
         private static Map<String, String> splitQuery(String stringUrl) {

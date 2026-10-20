@@ -186,6 +186,7 @@ public class AuthenticationCallbackHandler
                         new JwksCacheService(configurationService),
                         new OrchJwtService(configurationService),
                         auditService,
+                        metrics,
                         new NowHelper.NowClock(Clock.systemUTC()));
         this.secureRandom = new SecureRandom();
     }
