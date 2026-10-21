@@ -16,25 +16,25 @@ import java.time.Clock;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
-public class JwksCacheService extends BaseDynamoService<JwksCacheItem> {
-    private static final Logger LOG = LogManager.getLogger(JwksCacheService.class);
+public class EncryptionJwkCacheService extends BaseDynamoService<JwksCacheItem> {
+    private static final Logger LOG = LogManager.getLogger(EncryptionJwkCacheService.class);
 
     private final long timeToLive;
     private final ConfigurationService configurationService;
     private final NowHelper.NowClock nowClock;
 
-    public JwksCacheService(ConfigurationService configurationService, Clock clock) {
+    public EncryptionJwkCacheService(ConfigurationService configurationService, Clock clock) {
         super(JwksCacheItem.class, "Jwks-Cache", configurationService, true);
         this.timeToLive = configurationService.getJwkCacheExpirationInSeconds();
         this.configurationService = configurationService;
         this.nowClock = new NowHelper.NowClock(clock);
     }
 
-    public JwksCacheService(ConfigurationService configurationService) {
+    public EncryptionJwkCacheService(ConfigurationService configurationService) {
         this(configurationService, Clock.systemUTC());
     }
 
-    public JwksCacheService(
+    public EncryptionJwkCacheService(
             DynamoDbClient dynamoDbClient,
             DynamoDbTable<JwksCacheItem> dynamoDbTable,
             ConfigurationService configurationService,
@@ -45,7 +45,7 @@ public class JwksCacheService extends BaseDynamoService<JwksCacheItem> {
         this.nowClock = new NowHelper.NowClock(clock);
     }
 
-    public JwksCacheService(
+    public EncryptionJwkCacheService(
             DynamoDbClient dynamoDbClient,
             DynamoDbTable<JwksCacheItem> dynamoDbTable,
             ConfigurationService configurationService) {
@@ -72,7 +72,7 @@ public class JwksCacheService extends BaseDynamoService<JwksCacheItem> {
         if (jwkCacheItem.isEmpty()) {
             LOG.info(
                     "Cache entry does not exist for JWKS URL {}, creating new one with expiration of {} seconds",
-                    url.toString(),
+                    url,
                     timeToLive);
             JwksCacheItem newJwksCacheItem = createJwks(url);
             storeKey(newJwksCacheItem);

@@ -33,12 +33,12 @@ import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
 import uk.gov.di.orchestration.shared.services.DocAppAuthorisationService;
-import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.Metrics;
 import uk.gov.di.orchestration.shared.services.OrchAuthCodeService;
 import uk.gov.di.orchestration.shared.services.OrchClientSessionService;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.OrchSessionService;
 import uk.gov.di.orchestration.shared.services.RedirectService;
 import uk.gov.di.orchestration.shared.services.SerializationService;
@@ -119,9 +119,9 @@ public class DocAppCallbackHandler
         this.authorisationService =
                 new DocAppAuthorisationService(
                         configurationService,
-                        new JwksCacheService(configurationService),
+                        new EncryptionJwkCacheService(configurationService),
                         new StateStorageService(configurationService),
-                        new OrchJwtService(configurationService));
+                        new JwtService(configurationService));
         this.tokenService =
                 new DocAppCriService(configurationService, kmsConnectionService, this.docAppCriApi);
         this.orchClientSessionService = new OrchClientSessionService(configurationService);

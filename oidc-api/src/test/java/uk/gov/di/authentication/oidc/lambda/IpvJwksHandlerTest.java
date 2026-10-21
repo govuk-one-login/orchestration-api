@@ -10,7 +10,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.gov.di.authentication.ipv.lambda.IpvJwksHandler;
-import uk.gov.di.orchestration.shared.services.JwksService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +24,8 @@ import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyRespons
 
 class IpvJwksHandlerTest {
     private final Context context = mock(Context.class);
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private IpvJwksHandler handler;
     private final ECKey ipvTokenSigningKey =
             new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID().toString()).generate();
@@ -33,9 +34,10 @@ class IpvJwksHandlerTest {
 
     @BeforeEach
     public void setUp() {
-        handler = new IpvJwksHandler(jwksService);
+        handler = new IpvJwksHandler(signingJwkCacheService);
 
-        when(jwksService.getPublicIpvTokenJwkWithOpaqueId()).thenReturn(ipvTokenSigningKey);
+        when(signingJwkCacheService.getPublicIpvTokenJwkWithOpaqueId())
+                .thenReturn(ipvTokenSigningKey);
     }
 
     @Test
@@ -51,7 +53,7 @@ class IpvJwksHandlerTest {
 
     @Test
     void shouldReturn500WhenSigningKeyIsNotPresent() {
-        when(jwksService.getPublicIpvTokenJwkWithOpaqueId()).thenReturn(null);
+        when(signingJwkCacheService.getPublicIpvTokenJwkWithOpaqueId()).thenReturn(null);
 
         var event = new APIGatewayProxyRequestEvent();
         var result = handler.handleRequest(event, context);

@@ -23,9 +23,9 @@ import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.AuditService;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
-import uk.gov.di.orchestration.shared.services.JwksCacheService;
+import uk.gov.di.orchestration.shared.services.EncryptionJwkCacheService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.Metrics;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 import uk.gov.di.orchestration.shared.services.TokenService;
 import uk.gov.di.orchestration.sis.exception.SISCallbackValidationError;
@@ -52,8 +52,8 @@ public class SISAuthorisationService {
     private final TokenService tokenService;
     private final StateStorageService stateStorageService;
     private final CrossBrowserOrchestrationService crossBrowserOrchestrationService;
-    private final JwksCacheService jwksCacheService;
-    private final OrchJwtService orchJwtService;
+    private final EncryptionJwkCacheService encryptionJwkCacheService;
+    private final JwtService jwtService;
     private final AuditService auditService;
     private final Metrics metrics;
     private final NowHelper.NowClock nowClock;
@@ -63,8 +63,8 @@ public class SISAuthorisationService {
             TokenService tokenService,
             StateStorageService stateStorageService,
             CrossBrowserOrchestrationService crossBrowserOrchestrationService,
-            JwksCacheService jwksCacheService,
-            OrchJwtService orchJwtService,
+            EncryptionJwkCacheService encryptionJwkCacheService,
+            JwtService jwtService,
             AuditService auditService,
             Metrics metrics,
             NowHelper.NowClock nowClock) {
@@ -72,8 +72,8 @@ public class SISAuthorisationService {
         this.tokenService = tokenService;
         this.stateStorageService = stateStorageService;
         this.crossBrowserOrchestrationService = crossBrowserOrchestrationService;
-        this.jwksCacheService = jwksCacheService;
-        this.orchJwtService = orchJwtService;
+        this.encryptionJwkCacheService = encryptionJwkCacheService;
+        this.jwtService = jwtService;
         this.auditService = auditService;
         this.metrics = metrics;
         this.nowClock = nowClock;
@@ -184,7 +184,7 @@ public class SISAuthorisationService {
         }
         claimsBuilder.claim("claims", claimsRequest.toJSONObject());
         LOG.info("Encrypted request JWT has been generated");
-        return orchJwtService.signAndEncryptJWT(
+        return jwtService.signAndEncryptJWT(
                 claimsBuilder.build(),
                 configurationService.getSISTokenSigningKeyAlias(),
                 getPublicEncryptionKey());
@@ -192,7 +192,8 @@ public class SISAuthorisationService {
 
     private RSAPublicKey getPublicEncryptionKey() {
         LOG.info("Getting SIS Encryption JWK via JWKS endpoint");
-        return getRsaPublicKeyFromJwksCacheItem(jwksCacheService.getOrGenerateSISJwksCacheItem());
+        return getRsaPublicKeyFromJwksCacheItem(
+                encryptionJwkCacheService.getOrGenerateSISJwksCacheItem());
     }
 
     private ClaimsSetRequest buildClaimsRequest(

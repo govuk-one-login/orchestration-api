@@ -11,8 +11,8 @@ import org.apache.logging.log4j.Logger;
 import org.crac.Core;
 import org.crac.Resource;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,16 +26,16 @@ public class SISJwksHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent>,
                 Resource {
 
-    private final JwksService jwksService;
+    private final SigningJwkCacheService signingJwkCacheService;
     private static final Logger LOG = LogManager.getLogger(SISJwksHandler.class);
 
-    public SISJwksHandler(JwksService jwksService) {
-        this.jwksService = jwksService;
+    public SISJwksHandler(SigningJwkCacheService signingJwkCacheService) {
+        this.signingJwkCacheService = signingJwkCacheService;
     }
 
     public SISJwksHandler(ConfigurationService configurationService) {
-        this.jwksService =
-                new JwksService(
+        this.signingJwkCacheService =
+                new SigningJwkCacheService(
                         configurationService, new KmsConnectionService(configurationService));
     }
 
@@ -52,7 +52,7 @@ public class SISJwksHandler
         // the SnapStart image is restored. This allows us to fetch the key
         // on every restore, but continue to cache it for the duration that
         // the same lambda exists.
-        this.jwksService.emptyCache();
+        this.signingJwkCacheService.emptyCache();
     }
 
     @Override
@@ -70,7 +70,7 @@ public class SISJwksHandler
         try {
             List<JWK> signingKeys = new ArrayList<>();
 
-            signingKeys.add(jwksService.getPublicSisTokenJwkWithOpaqueId());
+            signingKeys.add(signingJwkCacheService.getPublicSisTokenJwkWithOpaqueId());
 
             JWKSet jwkSet = new JWKSet(signingKeys);
 

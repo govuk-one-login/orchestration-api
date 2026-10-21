@@ -9,8 +9,8 @@ import com.nimbusds.jose.jwk.JWKSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,18 +24,20 @@ public class AuthJwksHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     private final ConfigurationService configurationService;
-    private final JwksService jwksService;
+    private final SigningJwkCacheService signingJwkCacheService;
     private static final Logger LOG = LogManager.getLogger(AuthJwksHandler.class);
 
-    public AuthJwksHandler(ConfigurationService configurationService, JwksService jwksService) {
+    public AuthJwksHandler(
+            ConfigurationService configurationService,
+            SigningJwkCacheService signingJwkCacheService) {
         this.configurationService = configurationService;
-        this.jwksService = jwksService;
+        this.signingJwkCacheService = signingJwkCacheService;
     }
 
     public AuthJwksHandler(ConfigurationService configurationService) {
         this.configurationService = configurationService;
-        this.jwksService =
-                new JwksService(
+        this.signingJwkCacheService =
+                new SigningJwkCacheService(
                         configurationService, new KmsConnectionService(configurationService));
     }
 
@@ -53,7 +55,7 @@ public class AuthJwksHandler
 
             List<JWK> signingKeys = new ArrayList<>();
 
-            signingKeys.add(jwksService.getPublicAuthSigningJwkWithOpaqueId());
+            signingKeys.add(signingJwkCacheService.getPublicAuthSigningJwkWithOpaqueId());
 
             JWKSet jwkSet = new JWKSet(signingKeys);
 

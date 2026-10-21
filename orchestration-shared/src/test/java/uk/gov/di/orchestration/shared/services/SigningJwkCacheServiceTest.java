@@ -24,12 +24,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.orchestration.shared.helpers.HashHelper.hashSha256String;
 
-class JwksServiceTest {
+class SigningJwkCacheServiceTest {
 
     private final ConfigurationService configurationService = mock(ConfigurationService.class);
     private final KmsConnectionService kmsConnectionService = mock(KmsConnectionService.class);
-    private final JwksService jwksService =
-            new JwksService(configurationService, kmsConnectionService);
+    private final SigningJwkCacheService signingJwkCacheService =
+            new SigningJwkCacheService(configurationService, kmsConnectionService);
 
     @Test
     void shouldRetrieveExternalTokenSigningECKeyFromKmsAndParseToJwk() throws Exception {
@@ -39,7 +39,7 @@ class JwksServiceTest {
         var publicKey = generateECKey().toPublicKey().getEncoded();
         mockKmsPublicKeyResponse(publicKey, keyAlias);
 
-        JWK publicKeyJwk = jwksService.getNextPublicTokenJwkWithOpaqueIdV2();
+        JWK publicKeyJwk = signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2();
 
         assertThat(publicKeyJwk.getKeyID(), equalTo(hashSha256String(keyAlias)));
         assertThat(publicKeyJwk.getAlgorithm(), equalTo(JWSAlgorithm.ES256));
@@ -55,7 +55,7 @@ class JwksServiceTest {
         mockKmsPublicKeyResponse(
                 publicKey, SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_256, keyAlias);
 
-        JWK publicKeyJwk = jwksService.getNextPublicTokenRsaJwkWithOpaqueIdV2();
+        JWK publicKeyJwk = signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2();
 
         assertThat(publicKeyJwk.getKeyID(), equalTo(hashSha256String(keyAlias)));
         assertThat(publicKeyJwk.getAlgorithm(), equalTo(JWSAlgorithm.RS256));
@@ -70,7 +70,7 @@ class JwksServiceTest {
         var publicKey = generateECKey().toPublicKey().getEncoded();
         mockKmsPublicKeyResponse(publicKey, keyAlias);
 
-        JWK publicKeyJwk = jwksService.getPublicDocAppSigningJwkWithOpaqueId();
+        JWK publicKeyJwk = signingJwkCacheService.getPublicDocAppSigningJwkWithOpaqueId();
 
         assertThat(publicKeyJwk.getKeyID(), equalTo(hashSha256String(keyAlias)));
         assertThat(publicKeyJwk.getAlgorithm(), equalTo(JWSAlgorithm.ES256));
@@ -85,7 +85,7 @@ class JwksServiceTest {
         var publicKey = generateECKey().toPublicKey().getEncoded();
         mockKmsPublicKeyResponse(publicKey, keyAlias);
 
-        JWK publicKeyJwk = jwksService.getPublicStorageTokenJwkWithOpaqueId();
+        JWK publicKeyJwk = signingJwkCacheService.getPublicStorageTokenJwkWithOpaqueId();
 
         assertThat(publicKeyJwk.getKeyID(), equalTo(hashSha256String(keyAlias)));
         assertThat(publicKeyJwk.getAlgorithm(), equalTo(JWSAlgorithm.ES256));

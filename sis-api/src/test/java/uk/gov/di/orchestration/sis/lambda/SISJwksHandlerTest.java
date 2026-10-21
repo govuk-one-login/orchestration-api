@@ -8,7 +8,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.gov.di.orchestration.shared.services.JwksService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +23,8 @@ import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyRespons
 class SISJwksHandlerTest {
 
     private final Context context = mock(Context.class);
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private SISJwksHandler handler;
     private ECKey sisTokenSigningKey;
 
@@ -31,9 +32,10 @@ class SISJwksHandlerTest {
     void setUp() throws Exception {
         sisTokenSigningKey =
                 new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID().toString()).generate();
-        handler = new SISJwksHandler(jwksService);
+        handler = new SISJwksHandler(signingJwkCacheService);
 
-        when(jwksService.getPublicSisTokenJwkWithOpaqueId()).thenReturn(sisTokenSigningKey);
+        when(signingJwkCacheService.getPublicSisTokenJwkWithOpaqueId())
+                .thenReturn(sisTokenSigningKey);
     }
 
     @Test
@@ -50,7 +52,7 @@ class SISJwksHandlerTest {
 
     @Test
     void shouldReturn500WhenSigningKeyIsNotPresent() {
-        when(jwksService.getPublicSisTokenJwkWithOpaqueId()).thenReturn(null);
+        when(signingJwkCacheService.getPublicSisTokenJwkWithOpaqueId()).thenReturn(null);
 
         var event = new APIGatewayProxyRequestEvent();
         var result = handler.handleRequest(event, context);

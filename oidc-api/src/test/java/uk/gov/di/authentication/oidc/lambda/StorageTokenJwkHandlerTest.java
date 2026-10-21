@@ -9,7 +9,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.gov.di.orchestration.shared.services.JwksService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +24,8 @@ import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyRespons
 class StorageTokenJwkHandlerTest {
 
     private final Context context = mock(Context.class);
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private StorageTokenJwkHandler handler;
     private final ECKey storageTokenSigningKey =
             new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID().toString()).generate();
@@ -33,8 +34,9 @@ class StorageTokenJwkHandlerTest {
 
     @BeforeEach
     public void setUp() {
-        handler = new StorageTokenJwkHandler(jwksService);
-        when(jwksService.getPublicStorageTokenJwkWithOpaqueId()).thenReturn(storageTokenSigningKey);
+        handler = new StorageTokenJwkHandler(signingJwkCacheService);
+        when(signingJwkCacheService.getPublicStorageTokenJwkWithOpaqueId())
+                .thenReturn(storageTokenSigningKey);
     }
 
     @Test
@@ -50,7 +52,7 @@ class StorageTokenJwkHandlerTest {
 
     @Test
     void shouldReturn500WhenSigningKeyIsNotPresent() {
-        when(jwksService.getPublicStorageTokenJwkWithOpaqueId()).thenReturn(null);
+        when(signingJwkCacheService.getPublicStorageTokenJwkWithOpaqueId()).thenReturn(null);
 
         var event = new APIGatewayProxyRequestEvent();
         var result = handler.handleRequest(event, context);

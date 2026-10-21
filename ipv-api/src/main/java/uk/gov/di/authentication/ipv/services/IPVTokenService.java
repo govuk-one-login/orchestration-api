@@ -29,8 +29,8 @@ import uk.gov.di.orchestration.shared.exceptions.UnsuccessfulCredentialResponseE
 import uk.gov.di.orchestration.shared.helpers.ConstructUriHelper;
 import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -43,23 +43,26 @@ public class IPVTokenService {
 
     private final ConfigurationService configurationService;
     private final KmsConnectionService kmsService;
-    private final JwksService jwksService;
+    private final SigningJwkCacheService signingJwkCacheService;
     private static final JWSAlgorithm TOKEN_ALGORITHM = JWSAlgorithm.ES256;
     private static final Long PRIVATE_KEY_JWT_EXPIRY = 5L;
     private static final Logger LOG = LogManager.getLogger(IPVTokenService.class);
 
     public IPVTokenService(
             ConfigurationService configurationService, KmsConnectionService kmsService) {
-        this(configurationService, kmsService, new JwksService(configurationService, kmsService));
+        this(
+                configurationService,
+                kmsService,
+                new SigningJwkCacheService(configurationService, kmsService));
     }
 
     public IPVTokenService(
             ConfigurationService configurationService,
             KmsConnectionService kmsService,
-            JwksService jwksService) {
+            SigningJwkCacheService signingJwkCacheService) {
         this.configurationService = configurationService;
         this.kmsService = kmsService;
-        this.jwksService = jwksService;
+        this.signingJwkCacheService = signingJwkCacheService;
     }
 
     public TokenResponse getToken(String authCode) {
@@ -159,7 +162,7 @@ public class IPVTokenService {
 
     private PrivateKeyJWT generatePrivateKeyJwt(JWTAuthenticationClaimsSet claimsSet) {
         try {
-            var signingJwk = jwksService.getPublicIpvTokenJwkWithOpaqueId();
+            var signingJwk = signingJwkCacheService.getPublicIpvTokenJwkWithOpaqueId();
             var jwsHeader =
                     new JWSHeader.Builder(TOKEN_ALGORITHM).keyID(signingJwk.getKeyID()).build();
             var encodedHeader = jwsHeader.toBase64URL();

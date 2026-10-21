@@ -32,10 +32,11 @@ import static org.mockito.Mockito.when;
 
 class TokenValidationServiceTest {
 
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private final ConfigurationService configurationService = mock(ConfigurationService.class);
     private final TokenValidationService tokenValidationService =
-            new TokenValidationService(jwksService, configurationService);
+            new TokenValidationService(signingJwkCacheService, configurationService);
     private static final Subject SUBJECT = new Subject("some-subject");
     private static final List<String> SCOPES = List.of("openid", "email", "phone");
     private static final List<String> REFRESH_SCOPES = List.of("openid", "email", "offline_access");
@@ -52,12 +53,12 @@ class TokenValidationServiceTest {
     @BeforeEach
     void setUp() throws JOSEException {
         ecJWK = generateECKeyPair();
-        when(jwksService.getStoredOldPublicTokenJwksWithOpaqueId())
+        when(signingJwkCacheService.getStoredOldPublicTokenJwksWithOpaqueId())
                 .thenReturn(new ArrayList<>(List.of(ecJWK.toECKey())));
 
         newV2ECJWK = generateCustomECKeyPair(NEW_V2_KEY_ID);
         newV2Signer = new ECDSASigner(newV2ECJWK);
-        when(jwksService.getNextPublicTokenJwkWithOpaqueIdV2()).thenReturn(newV2ECJWK);
+        when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2()).thenReturn(newV2ECJWK);
     }
 
     @Test
@@ -99,7 +100,7 @@ class TokenValidationServiceTest {
         var newRSASigner = new RSASSASigner(newRSAKey);
 
         when(configurationService.isRsaSigningAvailable()).thenReturn(true);
-        when(jwksService.getNextPublicTokenRsaJwkWithOpaqueIdV2()).thenReturn(newRSAKey);
+        when(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2()).thenReturn(newRSAKey);
 
         SignedJWT signedAccessToken = createCustomSignedAccessToken(newRSASigner, NEW_V2_KEY_ID);
         assertTrue(
@@ -114,7 +115,7 @@ class TokenValidationServiceTest {
         var rsaSigner = new RSASSASigner(wrongRSAKey);
 
         when(configurationService.isRsaSigningAvailable()).thenReturn(true);
-        when(jwksService.getNextPublicTokenRsaJwkWithOpaqueIdV2()).thenReturn(newRSAKey);
+        when(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2()).thenReturn(newRSAKey);
 
         SignedJWT signedAccessToken = createCustomSignedAccessToken(rsaSigner, FAILED_KEY_ID);
         assertFalse(
@@ -168,7 +169,7 @@ class TokenValidationServiceTest {
             Date expiryDate = NowHelper.nowPlus(2, ChronoUnit.MINUTES);
             var oldStoredECKey = generateCustomECKeyPair(OLD_STORED_KEY_ID);
 
-            when(jwksService.getStoredOldPublicTokenJwksWithOpaqueId())
+            when(signingJwkCacheService.getStoredOldPublicTokenJwksWithOpaqueId())
                     .thenReturn(new ArrayList<ECKey>(Arrays.asList(oldStoredECKey.toECKey())));
 
             SignedJWT signedIdToken = createCustomSignedIdToken(expiryDate, oldStoredECKey);
@@ -183,7 +184,7 @@ class TokenValidationServiceTest {
             var oldStoredECKey = generateCustomECKeyPair(OLD_STORED_KEY_ID);
             var failedECKey = generateCustomECKeyPair(FAILED_KEY_ID);
 
-            when(jwksService.getStoredOldPublicTokenJwksWithOpaqueId())
+            when(signingJwkCacheService.getStoredOldPublicTokenJwksWithOpaqueId())
                     .thenReturn(new ArrayList<ECKey>(Arrays.asList(oldStoredECKey.toECKey())));
 
             SignedJWT signedIdToken = createCustomSignedIdToken(expiryDate, failedECKey);
@@ -195,7 +196,7 @@ class TokenValidationServiceTest {
         @Test
         void shouldFailToValidateECKeyReauthIDTokenIfNoOldStoredPublicKey() {
             Date expiryDate = NowHelper.nowPlus(2, ChronoUnit.MINUTES);
-            when(jwksService.getStoredOldPublicTokenJwksWithOpaqueId())
+            when(signingJwkCacheService.getStoredOldPublicTokenJwksWithOpaqueId())
                     .thenReturn(new ArrayList<>());
 
             SignedJWT signedIdToken = createSignedIdToken(expiryDate);

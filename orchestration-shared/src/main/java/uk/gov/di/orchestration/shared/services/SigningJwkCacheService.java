@@ -1,7 +1,6 @@
 package uk.gov.di.orchestration.shared.services;
 
 import com.google.gson.reflect.TypeToken;
-import com.nimbusds.jose.KeySourceException;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyUse;
@@ -11,10 +10,8 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.kms.model.GetPublicKeyRequest;
 import software.amazon.awssdk.services.kms.model.GetPublicKeyResponse;
 import uk.gov.di.orchestration.shared.serialization.Json;
-import uk.gov.di.orchestration.shared.utils.JwksUtils;
 
 import java.lang.reflect.Type;
-import java.net.URL;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -24,6 +21,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.nimbusds.jose.JWSAlgorithm.ES256;
@@ -32,20 +30,20 @@ import static com.nimbusds.jose.jwk.Curve.P_256;
 import static software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec.ECDSA_SHA_256;
 import static uk.gov.di.orchestration.shared.helpers.HashHelper.hashSha256String;
 
-public class JwksService {
+public class SigningJwkCacheService {
     private final ConfigurationService configurationService;
     private final KmsConnectionService kmsConnectionService;
     private static final Map<String, JWK> KEY_CACHE = new HashMap<>();
-    private static final Logger LOG = LogManager.getLogger(JwksService.class);
+    private static final Logger LOG = LogManager.getLogger(SigningJwkCacheService.class);
     private final Json objectMapper = SerializationService.getInstance();
 
-    public JwksService(
+    public SigningJwkCacheService(
             ConfigurationService configurationService, KmsConnectionService kmsConnectionService) {
         this.configurationService = configurationService;
         this.kmsConnectionService = kmsConnectionService;
     }
 
-    public ArrayList<ECKey> getStoredOldPublicTokenJwksWithOpaqueId() {
+    public List<ECKey> getStoredOldPublicTokenJwksWithOpaqueId() {
         try {
             LOG.info("Retrieving stored EC public key");
             Type listType = new TypeToken<ArrayList<ECKey>>() {}.getType();
@@ -92,10 +90,6 @@ public class JwksService {
     public JWK getPublicAuthSigningJwkWithOpaqueId() {
         LOG.info("Retrieving Auth public signing key");
         return getPublicJWKWithKeyId(configurationService.getAuthSigningKeyAlias());
-    }
-
-    public JWK retrieveJwkFromURLWithKeyId(URL url, String keyId) throws KeySourceException {
-        return JwksUtils.retrieveJwkFromURLWithKeyId(url, keyId);
     }
 
     JWK getPublicJWKWithKeyId(String keyId) {

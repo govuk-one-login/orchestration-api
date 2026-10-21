@@ -11,7 +11,7 @@ import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,13 +26,14 @@ import static uk.gov.di.orchestration.sharedtest.matchers.APIGatewayProxyRespons
 class JwksHandlerTest {
 
     private final Context context = mock(Context.class);
-    private final JwksService jwksService = mock(JwksService.class);
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
     private final ConfigurationService configurationService = mock(ConfigurationService.class);
     private JwksHandler handler;
 
     @BeforeEach
     public void setUp() {
-        handler = new JwksHandler(configurationService, jwksService);
+        handler = new JwksHandler(configurationService, signingJwkCacheService);
         when(configurationService.isRsaSigningAvailable()).thenReturn(false);
     }
 
@@ -40,8 +41,10 @@ class JwksHandlerTest {
     void shouldReturnTwoJwksWhenRsaSigningIsDisabled() throws JOSEException {
         var newTokenSigningKeyV2 = generateECKey();
         var docAppSigningKey = generateECKey();
-        when(jwksService.getNextPublicTokenJwkWithOpaqueIdV2()).thenReturn(newTokenSigningKeyV2);
-        when(jwksService.getPublicDocAppSigningJwkWithOpaqueId()).thenReturn(docAppSigningKey);
+        when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2())
+                .thenReturn(newTokenSigningKeyV2);
+        when(signingJwkCacheService.getPublicDocAppSigningJwkWithOpaqueId())
+                .thenReturn(docAppSigningKey);
 
         var event = new APIGatewayProxyRequestEvent();
         var result = handler.handleRequest(event, context);
@@ -59,10 +62,12 @@ class JwksHandlerTest {
         var docAppSigningKey = generateECKey();
         var newRSATokenSigningKeyV2 =
                 new RSAKeyGenerator(2048).keyID(UUID.randomUUID().toString()).generate();
-        when(jwksService.getNextPublicTokenJwkWithOpaqueIdV2()).thenReturn(newTokenSigningKeyV2);
-        when(jwksService.getNextPublicTokenRsaJwkWithOpaqueIdV2())
+        when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2())
+                .thenReturn(newTokenSigningKeyV2);
+        when(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2())
                 .thenReturn(newRSATokenSigningKeyV2);
-        when(jwksService.getPublicDocAppSigningJwkWithOpaqueId()).thenReturn(docAppSigningKey);
+        when(signingJwkCacheService.getPublicDocAppSigningJwkWithOpaqueId())
+                .thenReturn(docAppSigningKey);
 
         var event = new APIGatewayProxyRequestEvent();
         var result = handler.handleRequest(event, context);
@@ -77,7 +82,7 @@ class JwksHandlerTest {
 
     @Test
     void shouldReturn500WhenSigningKeyIsNotPresent() {
-        when(jwksService.getNextPublicTokenJwkWithOpaqueIdV2()).thenReturn(null);
+        when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2()).thenReturn(null);
 
         var event = new APIGatewayProxyRequestEvent();
         var result = handler.handleRequest(event, context);
@@ -90,8 +95,10 @@ class JwksHandlerTest {
     void shouldSetACacheHeaderOfOneDayOnSuccess() throws JOSEException {
         var newTokenSigningKeyV2 = generateECKey();
         var docAppSigningKey = generateECKey();
-        when(jwksService.getNextPublicTokenJwkWithOpaqueIdV2()).thenReturn(newTokenSigningKeyV2);
-        when(jwksService.getPublicDocAppSigningJwkWithOpaqueId()).thenReturn(docAppSigningKey);
+        when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2())
+                .thenReturn(newTokenSigningKeyV2);
+        when(signingJwkCacheService.getPublicDocAppSigningJwkWithOpaqueId())
+                .thenReturn(docAppSigningKey);
 
         var response = handler.handleRequest(new APIGatewayProxyRequestEvent(), context);
         assertThat(response, hasHeader("Cache-Control", "max-age=86400"));

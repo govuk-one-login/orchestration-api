@@ -37,13 +37,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.orchestration.sharedtest.utils.KeyPairUtils.generateRsaKeyPair;
 
-class OrchJwtServiceTest {
+class JwtServiceTest {
     private static final String SIGNING_KEY_ID = "test-key-id";
     private static final String SIGNING_KEY_ALIAS = "test-key-alias";
     private static final String LONG_CLAIM = "1".repeat(5000);
     private final KmsConnectionService kmsConnectionService = mock(KmsConnectionService.class);
-    private final JwksService jwksService = mock(JwksService.class);
-    private OrchJwtService orchJwtService;
+    private final SigningJwkCacheService signingJwkCacheService =
+            mock(SigningJwkCacheService.class);
+    private JwtService jwtService;
     private ECKey ecSigningKey;
     private PrivateKey privateEncKey;
     private RSAPublicKey publicEncKey;
@@ -55,13 +56,13 @@ class OrchJwtServiceTest {
                         .keyID(SIGNING_KEY_ID)
                         .algorithm(JWSAlgorithm.ES256)
                         .generate();
-        when(jwksService.getPublicJWKWithKeyId(SIGNING_KEY_ALIAS))
+        when(signingJwkCacheService.getPublicJWKWithKeyId(SIGNING_KEY_ALIAS))
                 .thenReturn(ecSigningKey.toPublicJWK());
         var keyPair = generateRsaKeyPair();
         privateEncKey = keyPair.getPrivate();
         publicEncKey = (RSAPublicKey) keyPair.getPublic();
 
-        orchJwtService = new OrchJwtService(kmsConnectionService, jwksService);
+        jwtService = new JwtService(kmsConnectionService, signingJwkCacheService);
     }
 
     @Test
@@ -74,7 +75,7 @@ class OrchJwtServiceTest {
         mockKmsSigning(ecSigningKey, jwtClaimsSet);
 
         var encryptedJWT =
-                orchJwtService.signAndEncryptJWT(jwtClaimsSet, SIGNING_KEY_ALIAS, publicEncKey);
+                jwtService.signAndEncryptJWT(jwtClaimsSet, SIGNING_KEY_ALIAS, publicEncKey);
 
         var signedJWTResponse = decryptJWT(encryptedJWT);
         var signRequestCaptor = ArgumentCaptor.forClass(SignRequest.class);
@@ -95,7 +96,7 @@ class OrchJwtServiceTest {
                 jwsHeader.toBase64URL() + "." + Base64URL.encode(jwtClaimsSet.toString());
         mockKmsSigning(ecSigningKey, jwtClaimsSet);
 
-        var signedJWTResponse = orchJwtService.signJWT(jwtClaimsSet, SIGNING_KEY_ALIAS);
+        var signedJWTResponse = jwtService.signJWT(jwtClaimsSet, SIGNING_KEY_ALIAS);
 
         var signRequestCaptor = ArgumentCaptor.forClass(SignRequest.class);
         assertThat(signedJWTResponse.getJWTClaimsSet().getClaim("claim1"), equalTo(claim1Value));
@@ -119,7 +120,7 @@ class OrchJwtServiceTest {
                 jwsHeader.toBase64URL() + "." + Base64URL.encode(jwtClaimsSet.toString());
         mockKmsSigning(ecSigningKey, jwtClaimsSet);
 
-        var signedJWTResponse = orchJwtService.signJWT(jwtClaimsSet, SIGNING_KEY_ALIAS);
+        var signedJWTResponse = jwtService.signJWT(jwtClaimsSet, SIGNING_KEY_ALIAS);
 
         var signRequestCaptor = ArgumentCaptor.forClass(SignRequest.class);
         assertThat(signedJWTResponse.getJWTClaimsSet().getClaim("claim1"), equalTo(claim1Value));

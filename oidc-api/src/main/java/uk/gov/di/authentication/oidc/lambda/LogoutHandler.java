@@ -12,10 +12,10 @@ import uk.gov.di.orchestration.shared.helpers.CookieHelper;
 import uk.gov.di.orchestration.shared.helpers.PersistentIdHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.DynamoClientService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
 import uk.gov.di.orchestration.shared.services.LogoutService;
 import uk.gov.di.orchestration.shared.services.OrchSessionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 import uk.gov.di.orchestration.shared.services.TokenValidationService;
 
 import java.util.Map;
@@ -49,7 +49,7 @@ public class LogoutHandler
         this.dynamoClientService = new DynamoClientService(configurationService);
         this.tokenValidationService =
                 new TokenValidationService(
-                        new JwksService(
+                        new SigningJwkCacheService(
                                 configurationService,
                                 new KmsConnectionService(configurationService)),
                         configurationService);

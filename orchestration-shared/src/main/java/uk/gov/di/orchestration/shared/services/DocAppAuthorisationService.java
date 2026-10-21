@@ -25,9 +25,9 @@ public class DocAppAuthorisationService {
 
     private static final Logger LOG = LogManager.getLogger(DocAppAuthorisationService.class);
     private final ConfigurationService configurationService;
-    private final JwksCacheService jwksCacheService;
+    private final EncryptionJwkCacheService encryptionJwkCacheService;
     private final StateStorageService stateStorageService;
-    private final OrchJwtService orchJwtService;
+    private final JwtService jwtService;
     private final NowHelper.NowClock nowClock;
     public static final String STATE_STORAGE_PREFIX = "state:";
 
@@ -35,26 +35,26 @@ public class DocAppAuthorisationService {
 
     public DocAppAuthorisationService(
             ConfigurationService configurationService,
-            JwksCacheService jwksCacheService,
+            EncryptionJwkCacheService encryptionJwkCacheService,
             StateStorageService stateStorageService,
-            OrchJwtService orchJwtService,
+            JwtService jwtService,
             Clock clock) {
         this.configurationService = configurationService;
-        this.jwksCacheService = jwksCacheService;
+        this.encryptionJwkCacheService = encryptionJwkCacheService;
         this.stateStorageService = stateStorageService;
-        this.orchJwtService = orchJwtService;
+        this.jwtService = jwtService;
         this.nowClock = new NowHelper.NowClock(clock);
     }
 
     public DocAppAuthorisationService(
             ConfigurationService configurationService,
-            JwksCacheService jwksCacheService,
+            EncryptionJwkCacheService encryptionJwkCacheService,
             StateStorageService stateStorageService,
-            OrchJwtService orchJwtService) {
+            JwtService jwtService) {
         this.configurationService = configurationService;
-        this.jwksCacheService = jwksCacheService;
+        this.encryptionJwkCacheService = encryptionJwkCacheService;
         this.stateStorageService = stateStorageService;
-        this.orchJwtService = orchJwtService;
+        this.jwtService = jwtService;
         this.nowClock = new NowHelper.NowClock(Clock.systemUTC());
     }
 
@@ -153,7 +153,7 @@ public class DocAppAuthorisationService {
         }
         var publicEncryptionKey =
                 RsaKeyHelper.getRsaPublicKeyFromJwksCacheItem(getPublicEncryptionKey());
-        return orchJwtService.signAndEncryptJWT(
+        return jwtService.signAndEncryptJWT(
                 claimsBuilder.build(),
                 configurationService.getDocAppTokenSigningKeyAlias(),
                 publicEncryptionKey);
@@ -161,6 +161,6 @@ public class DocAppAuthorisationService {
 
     private JwksCacheItem getPublicEncryptionKey() {
         LOG.info("Getting Doc App Auth Encryption Public Key via JWKS endpoint");
-        return jwksCacheService.getOrGenerateDocAppJwksCacheItem();
+        return encryptionJwkCacheService.getOrGenerateDocAppJwksCacheItem();
     }
 }

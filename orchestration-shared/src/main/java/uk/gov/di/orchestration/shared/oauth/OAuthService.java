@@ -28,7 +28,7 @@ import uk.gov.di.orchestration.shared.exceptions.UnsuccessfulCredentialResponseE
 import uk.gov.di.orchestration.shared.helpers.NowHelper;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
 import uk.gov.di.orchestration.shared.services.CrossBrowserOrchestrationService;
-import uk.gov.di.orchestration.shared.services.OrchJwtService;
+import uk.gov.di.orchestration.shared.services.JwtService;
 import uk.gov.di.orchestration.shared.services.StateStorageService;
 
 import java.io.IOException;
@@ -50,7 +50,7 @@ public class OAuthService {
     }
 
     protected final OAuthConfiguration clientConfig;
-    private final OrchJwtService jwtService;
+    private final JwtService jwtService;
     private final NowHelper.NowClock clock;
     private final HTTPRequestSender httpRequestSender;
     private final StateStorageService stateStorageService;
@@ -63,7 +63,7 @@ public class OAuthService {
             CallbackValidator callbackValidator) {
         this(
                 clientConfig,
-                new OrchJwtService(configurationService),
+                new JwtService(configurationService),
                 new NowHelper.NowClock(Clock.systemUTC()),
                 new StateStorageService(configurationService),
                 new CrossBrowserOrchestrationService(configurationService),
@@ -72,7 +72,7 @@ public class OAuthService {
 
     public OAuthService(
             OAuthConfiguration clientConfig,
-            OrchJwtService jwtService,
+            JwtService jwtService,
             NowHelper.NowClock clock,
             StateStorageService stateStorageService,
             CrossBrowserOrchestrationService crossBrowserOrchestrationService,
@@ -88,7 +88,7 @@ public class OAuthService {
 
     public OAuthService(
             OAuthConfiguration clientConfig,
-            OrchJwtService jwtService,
+            JwtService jwtService,
             NowHelper.NowClock clock,
             HTTPRequestSender httpRequestSender,
             StateStorageService stateStorageService,

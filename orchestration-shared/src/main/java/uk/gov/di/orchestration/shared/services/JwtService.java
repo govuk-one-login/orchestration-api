@@ -31,23 +31,25 @@ import java.text.ParseException;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.LogFieldName.JWT_ID;
 import static uk.gov.di.orchestration.shared.helpers.LogLineHelper.attachLogFieldToLogs;
 
-public class OrchJwtService {
-    private static final Logger LOG = LogManager.getLogger(OrchJwtService.class);
+public class JwtService {
+    private static final Logger LOG = LogManager.getLogger(JwtService.class);
     private static final JWSAlgorithm SIGNING_ALGORITHM = JWSAlgorithm.ES256;
 
     private final KmsConnectionService kmsConnectionService;
-    private final JwksService jwksService;
+    private final SigningJwkCacheService signingJwkCacheService;
 
-    public OrchJwtService(ConfigurationService configurationService) {
+    public JwtService(ConfigurationService configurationService) {
         this(
                 new KmsConnectionService(configurationService),
-                new JwksService(
+                new SigningJwkCacheService(
                         configurationService, new KmsConnectionService(configurationService)));
     }
 
-    public OrchJwtService(KmsConnectionService kmsConnectionService, JwksService jwksService) {
+    public JwtService(
+            KmsConnectionService kmsConnectionService,
+            SigningJwkCacheService signingJwkCacheService) {
         this.kmsConnectionService = kmsConnectionService;
-        this.jwksService = jwksService;
+        this.signingJwkCacheService = signingJwkCacheService;
     }
 
     public EncryptedJWT signAndEncryptJWT(
@@ -83,7 +85,7 @@ public class OrchJwtService {
     }
 
     public SignedJWT signJWT(JWTClaimsSet jwtClaimsSet, String signingKeyAlias) {
-        var signingKey = jwksService.getPublicJWKWithKeyId(signingKeyAlias);
+        var signingKey = signingJwkCacheService.getPublicJWKWithKeyId(signingKeyAlias);
         var jwsHeader =
                 new JWSHeader.Builder(SIGNING_ALGORITHM).keyID(signingKey.getKeyID()).build();
 

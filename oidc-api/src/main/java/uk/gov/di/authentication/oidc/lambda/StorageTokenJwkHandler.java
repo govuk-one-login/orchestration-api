@@ -12,8 +12,8 @@ import org.apache.logging.log4j.ThreadContext;
 import org.crac.Core;
 import org.crac.Resource;
 import uk.gov.di.orchestration.shared.services.ConfigurationService;
-import uk.gov.di.orchestration.shared.services.JwksService;
 import uk.gov.di.orchestration.shared.services.KmsConnectionService;
+import uk.gov.di.orchestration.shared.services.SigningJwkCacheService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,16 +29,16 @@ public class StorageTokenJwkHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent>,
                 Resource {
 
-    private final JwksService jwksService;
+    private final SigningJwkCacheService signingJwkCacheService;
     private static final Logger LOG = LogManager.getLogger(StorageTokenJwkHandler.class);
 
-    public StorageTokenJwkHandler(JwksService jwksService) {
-        this.jwksService = jwksService;
+    public StorageTokenJwkHandler(SigningJwkCacheService signingJwkCacheService) {
+        this.signingJwkCacheService = signingJwkCacheService;
     }
 
     public StorageTokenJwkHandler(ConfigurationService configurationService) {
-        this.jwksService =
-                new JwksService(
+        this.signingJwkCacheService =
+                new SigningJwkCacheService(
                         configurationService, new KmsConnectionService(configurationService));
     }
 
@@ -55,7 +55,7 @@ public class StorageTokenJwkHandler
         // the SnapStart image is restored. This allows us to fetch the key
         // on every restore, but continue to cache it for the duration that
         // the same lambda exists.
-        this.jwksService.emptyCache();
+        this.signingJwkCacheService.emptyCache();
     }
 
     @Override
@@ -78,7 +78,7 @@ public class StorageTokenJwkHandler
 
             List<JWK> signingKeys = new ArrayList<>();
 
-            signingKeys.add(jwksService.getPublicStorageTokenJwkWithOpaqueId());
+            signingKeys.add(signingJwkCacheService.getPublicStorageTokenJwkWithOpaqueId());
 
             JWKSet jwkSet = new JWKSet(signingKeys);
 

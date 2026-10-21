@@ -22,31 +22,32 @@ import java.util.stream.Stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.orchestration.sharedtest.utils.KeyPairUtils.generateRsaKeyPair;
 
-class JwksCacheServiceTest extends BaseDynamoServiceTest<JwksCacheItem> {
+class EncryptionJwkCacheServiceTest extends BaseDynamoServiceTest<JwksCacheItem> {
     private static final String JWKS_URL = "http://localhost/.well-known/jwks.json";
     private static final String KEY_ID_1 = "test-enc-key-1";
     private static final String KEY_ID_2 = "test-enc-key-2";
     private static final JWK JWK_1 = createPublicJwk(KEY_ID_1);
     private static final JWK JWK_2 = createPublicJwk(KEY_ID_2);
-    private static final int expiryInSeconds = 100;
+    private static final int EXPIRY_IN_SECONDS = 100;
     private static final long VALID_TTL =
-            Instant.now().plusSeconds(expiryInSeconds).getEpochSecond();
+            Instant.now().plusSeconds(EXPIRY_IN_SECONDS).getEpochSecond();
     private static final MockedStatic<JwksUtils> jwksUtilsMockedStatic =
             Mockito.mockStatic(JwksUtils.class);
-    private JwksCacheService jwksCacheServiceSpy;
+    private EncryptionJwkCacheService encryptionJwkCacheServiceSpy;
 
     @BeforeEach
     void setup() throws MalformedURLException {
-        JwksCacheService jwksCacheService =
-                new JwksCacheService(dynamoDbClient, table, configurationService);
-        jwksCacheServiceSpy = Mockito.spy(jwksCacheService);
+        EncryptionJwkCacheService encryptionJwkCacheService =
+                new EncryptionJwkCacheService(dynamoDbClient, table, configurationService);
+        encryptionJwkCacheServiceSpy = spy(encryptionJwkCacheService);
         URL testJwksUrl = new URL(JWKS_URL);
         when(configurationService.getIPVJwksUrl()).thenReturn(testJwksUrl);
         when(configurationService.getDocAppJwksUrl()).thenReturn(testJwksUrl);
-        when(configurationService.getJwkCacheExpirationInSeconds()).thenReturn(expiryInSeconds);
+        when(configurationService.getJwkCacheExpirationInSeconds()).thenReturn(EXPIRY_IN_SECONDS);
     }
 
     @AfterAll
@@ -59,7 +60,7 @@ class JwksCacheServiceTest extends BaseDynamoServiceTest<JwksCacheItem> {
     @Test
     void getOrGenerateIpvJwksCacheItemReturnsJwksCacheWithValidTtl() {
         withValidJwksCache();
-        var jwksCacheItem = jwksCacheServiceSpy.getOrGenerateIpvJwksCacheItem();
+        var jwksCacheItem = encryptionJwkCacheServiceSpy.getOrGenerateIpvJwksCacheItem();
         assertThat(jwksCacheItem.getKeyId(), equalTo(KEY_ID_1));
         assertThat(jwksCacheItem.getTimeToLive(), equalTo(VALID_TTL));
     }
@@ -67,7 +68,7 @@ class JwksCacheServiceTest extends BaseDynamoServiceTest<JwksCacheItem> {
     @Test
     void getOrGenerateIpvJwksCacheItemReturnsFirstJwksCache() {
         withMultipleValidJwksCache();
-        var jwksCacheItem = jwksCacheServiceSpy.getOrGenerateIpvJwksCacheItem();
+        var jwksCacheItem = encryptionJwkCacheServiceSpy.getOrGenerateIpvJwksCacheItem();
         assertThat(jwksCacheItem.getKeyId(), equalTo(KEY_ID_1));
         assertThat(jwksCacheItem.getTimeToLive(), equalTo(VALID_TTL));
     }
@@ -75,18 +76,18 @@ class JwksCacheServiceTest extends BaseDynamoServiceTest<JwksCacheItem> {
     @Test
     void getOrGenerateIpvJwksCacheItemGeneratesJwksIfNone() {
         Stream<JwksCacheItem> jwksCacheItemStream = Stream.of();
-        doReturn(jwksCacheItemStream).when(jwksCacheServiceSpy).queryTableStream(JWKS_URL);
+        doReturn(jwksCacheItemStream).when(encryptionJwkCacheServiceSpy).queryTableStream(JWKS_URL);
         jwksUtilsMockedStatic
                 .when(() -> JwksUtils.getKey(new URL(JWKS_URL), KeyUse.ENCRYPTION))
                 .thenReturn(JWK_2);
-        var jwksCacheItem = jwksCacheServiceSpy.getOrGenerateIpvJwksCacheItem();
+        var jwksCacheItem = encryptionJwkCacheServiceSpy.getOrGenerateIpvJwksCacheItem();
         assertThat(jwksCacheItem.getKeyId(), equalTo(KEY_ID_2));
     }
 
     private void withValidJwksCache() {
         JwksCacheItem existingJwksCache = new JwksCacheItem(JWKS_URL, JWK_1, VALID_TTL);
         Stream<JwksCacheItem> jwksCacheItemStream = Stream.of(existingJwksCache);
-        doReturn(jwksCacheItemStream).when(jwksCacheServiceSpy).queryTableStream(JWKS_URL);
+        doReturn(jwksCacheItemStream).when(encryptionJwkCacheServiceSpy).queryTableStream(JWKS_URL);
     }
 
     private void withMultipleValidJwksCache() {
@@ -94,7 +95,7 @@ class JwksCacheServiceTest extends BaseDynamoServiceTest<JwksCacheItem> {
         JwksCacheItem secondExistingJwksCache = new JwksCacheItem(JWKS_URL, JWK_2, VALID_TTL);
         Stream<JwksCacheItem> jwksCacheItemStream =
                 Stream.of(firstExistingJwksCache, secondExistingJwksCache);
-        doReturn(jwksCacheItemStream).when(jwksCacheServiceSpy).queryTableStream(JWKS_URL);
+        doReturn(jwksCacheItemStream).when(encryptionJwkCacheServiceSpy).queryTableStream(JWKS_URL);
     }
 
     public static JWK createPublicJwk(String keyId) {
