@@ -274,10 +274,10 @@ spotless {
         importOrder "", "javax", "java", "\\#"
     }
 
-    groovyGradle {
-        target "**/*.gradle"
-        greclipse().configFile("tools/spotless-gradle.properties")
-    }
+//    groovyGradle {
+//        target "**/*.gradle"
+//        greclipse().configFile("tools/spotless-gradle.properties")
+//    }
 }
 
 dockerCompose {
