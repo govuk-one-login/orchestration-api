@@ -9861,12 +9861,12 @@ Resources:
             Stat: Sum
 
   SisJourneyCompletionRateAlarm:
-    Condition: IsProduction
+    Condition: IsDevOrBuild
     Type: AWS::CloudWatch::Alarm
     Properties:
       ActionsEnabled: true
       AlarmActions:
-        - !Ref OrchProdSlackEvents
+        - !Ref SlackEvents
       AlarmDescription: !Sub "SIS journey completion rate has dropped below 30% in ${Environment}.ACCOUNT: di-orchestration-${Environment}."
       AlarmName: !Sub ${Environment}-sis-journey-completion-rate-alarm
       ComparisonOperator: LessThanOrEqualToThreshold
@@ -9877,7 +9877,7 @@ Resources:
       Metrics:
         - Id: e1
           ReturnData: true
-          Expression: "IF(m2 >= 30, m1/m2*100)"
+          Expression: "IF(m2 >= 3, m1/m2*100)"
           Label: Journey Completion Rate
         - Id: m1
           ReturnData: false
