@@ -9859,6 +9859,59 @@ Resources:
                   Value: "AWS::Lambda::Function"
             Period: 60
             Stat: Sum
+
+  SisJourneyCompletionRateAlarm:
+    Condition: IsProduction
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref OrchProdSlackEvents
+      AlarmDescription: !Sub "SIS journey completion rate has dropped below 30% in ${Environment}.ACCOUNT: di-orchestration-${Environment}."
+      AlarmName: !Sub ${Environment}-sis-journey-completion-rate-alarm
+      ComparisonOperator: LessThanOrEqualToThreshold
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 30
+      TreatMissingData: notBreaching
+      Metrics:
+        - Id: e1
+          ReturnData: true
+          Expression: "IF(m2 >= 30, m1/m2*100)"
+          Label: Journey Completion Rate
+        - Id: m1
+          ReturnData: false
+          MetricStat:
+            Metric:
+              Namespace: Authentication
+              MetricName: orchJourneyCompleted
+              Dimensions:
+                - Name: journeyType
+                  Value: sis
+                - Name: LogGroup
+                  Value: !Sub "${Environment}-SisCallbackFunction"
+                - Name: ServiceName
+                  Value: !Sub "${Environment}-SisCallbackFunction"
+                - Name: ServiceType
+                  Value: "AWS::Lambda::Function"
+            Period: 60
+            Stat: Sum
+        - Id: m2
+          ReturnData: false
+          MetricStat:
+            Metric:
+              Namespace: Authentication
+              MetricName: SisHandoff
+              Dimensions:
+                - Name: LogGroup
+                  Value: !Sub "${Environment}-AuthenticationCallbackFunction"
+                - Name: ServiceName
+                  Value: !Sub "${Environment}-AuthenticationCallbackFunction"
+                - Name: ServiceType
+                  Value: "AWS::Lambda::Function"
+            Period: 60
+            Stat: Sum
+
   #endregion
 
   #region spot request queue alarms
