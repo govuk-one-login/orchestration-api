@@ -19,7 +19,7 @@ dependencies {
             libs.awsCloudwatchEmf,
             libs.pactProvider,
             libs.jettyServer,
-            "com.google.code.gson:gson:2.14.0"
+            "com.google.code.gson:gson:2.15.0"
 
     implementation project(":orchestration-shared")
     implementation project(":doc-checking-app-api")
