@@ -5,7 +5,7 @@ pact = "4.7.0"
 spotbugs = "4.10.4"
 
 [libraries]
-apacheCommonsCodec = "commons-codec:commons-codec:1.19.0"
+apacheCommonsCodec = "commons-codec:commons-codec:1.23.0"
 spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "spotbugs" }
 apacheCommonsCollections = "org.apache.commons:commons-collections4:4.5.0"
 apacheCommonsIo = "commons-io:commons-io:2.22.0"
