@@ -109,6 +109,12 @@ Conditions:
       !Equals [production, !Ref Environment],
     ]
   SisEnabled: !Equals [dev, !Ref Environment]
+  ProvisionNewExternalTokenSigningKeysV3:
+    !Or [
+      !Equals [ dev, !Ref Environment ],
+      !Equals [ build, !Ref Environment ],
+      !Equals [ staging, !Ref Environment ],
+    ]
   # Comment to force re-deployment of template - this can be deleted once the staging API GW/CloudFront migration is complete.
 
 Mappings:
@@ -2238,6 +2244,18 @@ Resources:
           ENVIRONMENT: !Sub ${Environment}
           NEXT_EXTERNAL_TOKEN_SIGNING_KEY_ALIAS_V2: !Ref OrchExternalTokenEcSigningKmsKeyAliasV2
           NEXT_EXTERNAL_TOKEN_SIGNING_KEY_RSA_ALIAS_V2: !Ref OrchExternalTokenRsaSigningKmsKeyAliasV2
+          PUBLISH_NEXT_EXTERNAL_TOKEN_SIGNING_KEYS_V3: !If
+            - PublishNextExternalTokenSigningKeysV3
+            - true
+            - false
+          NEXT_EXTERNAL_TOKEN_SIGNING_KEY_ALIAS_V3: !If
+            - PublishNextExternalTokenSigningKeysV3
+            - !Ref OrchExternalTokenEcSigningKmsKeyAliasV3
+            - !Ref AWS::NoValue
+          NEXT_EXTERNAL_TOKEN_SIGNING_KEY_RSA_ALIAS_V3: !If
+            - PublishNextExternalTokenSigningKeysV3
+            - !Ref OrchExternalTokenRsaSigningKmsKeyAliasV3
+            - !Ref AWS::NoValue
           OIDC_API_BASE_URL: !Sub
             - https://oidc.${ServiceDomain}/
             - ServiceDomain:
@@ -3343,6 +3361,18 @@ Resources:
           ENVIRONMENT: !Sub ${Environment}
           NEXT_EXTERNAL_TOKEN_SIGNING_KEY_ALIAS_V2: !Ref OrchExternalTokenEcSigningKmsKeyAliasV2
           NEXT_EXTERNAL_TOKEN_SIGNING_KEY_RSA_ALIAS_V2: !Ref OrchExternalTokenRsaSigningKmsKeyAliasV2
+          PUBLISH_NEXT_EXTERNAL_TOKEN_SIGNING_KEYS_V3: !If
+            - PublishNextExternalTokenSigningKeysV3
+            - true
+            - false
+          NEXT_EXTERNAL_TOKEN_SIGNING_KEY_ALIAS_V3: !If
+            - PublishNextExternalTokenSigningKeysV3
+            - !Ref OrchExternalTokenEcSigningKmsKeyAliasV3
+            - !Ref AWS::NoValue
+          NEXT_EXTERNAL_TOKEN_SIGNING_KEY_RSA_ALIAS_V3: !If
+            - PublishNextExternalTokenSigningKeysV3
+            - !Ref OrchExternalTokenRsaSigningKmsKeyAliasV3
+            - !Ref AWS::NoValue
           PUBLISH_OLD_EXTERNAL_TOKEN_SIGNING_KEYS: false
           DOC_APP_SIGNING_KEY_ALIAS: !Ref OrchDocAppSigningKmsKeyAlias
       Policies:
@@ -7046,6 +7076,16 @@ Resources:
               - kms:GetPublicKey
             Resource:
               - !GetAtt OrchExternalTokenEcSigningKmsKeyV2.Arn
+          - Fn::If:
+              - ProvisionNewExternalTokenSigningKeysV3
+              - Sid: AllowNewIdTokenSigningKmsV3
+                Effect: Allow
+                Action:
+                  - kms:Sign
+                  - kms:GetPublicKey
+                Resource:
+                  - !GetAtt OrchExternalTokenEcSigningKmsKeyV3.Arn
+              - !Ref AWS::NoValue
 
   IdTokenKmsRsaAccessPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -7060,6 +7100,16 @@ Resources:
               - kms:GetPublicKey
             Resource:
               - !GetAtt OrchExternalTokenRsaSigningKmsKeyV2.Arn
+          - Fn::If:
+              - ProvisionNewExternalTokenSigningKeysV3
+              - Sid: AllowNewIdTokenSigningKmsV3
+                Effect: Allow
+                Action:
+                  - kms:Sign
+                  - kms:GetPublicKey
+                Resource:
+                  - !GetAtt OrchExternalTokenRsaSigningKmsKeyV3.Arn
+              - !Ref AWS::NoValue
 
   DocAppSigningKmsAccessPolicy:
     Type: AWS::IAM::ManagedPolicy
