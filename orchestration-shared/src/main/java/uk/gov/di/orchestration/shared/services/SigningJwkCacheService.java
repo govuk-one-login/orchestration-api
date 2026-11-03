@@ -67,6 +67,17 @@ public class SigningJwkCacheService {
                 configurationService.getNextExternalTokenSigningKeyRsaAliasV2());
     }
 
+    public JWK getNextPublicTokenJwkWithOpaqueIdV3() {
+        LOG.info("Retrieving next EC public key version 3");
+        return getPublicJWKWithKeyId(configurationService.getNextExternalTokenSigningKeyAliasV3());
+    }
+
+    public JWK getNextPublicTokenRsaJwkWithOpaqueIdV3() {
+        LOG.info("Retrieving next RSA public key version 3");
+        return getPublicJWKWithKeyId(
+                configurationService.getNextExternalTokenSigningKeyRsaAliasV3());
+    }
+
     public JWK getPublicDocAppSigningJwkWithOpaqueId() {
         LOG.info("Retrieving Doc App public key");
         return getPublicJWKWithKeyId(configurationService.getDocAppTokenSigningKeyAlias());

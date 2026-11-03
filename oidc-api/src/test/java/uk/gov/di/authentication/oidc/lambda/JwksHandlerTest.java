@@ -81,6 +81,45 @@ class JwksHandlerTest {
     }
 
     @Test
+    void shouldReturnFiveJwksWhenNewKeyIsEnabled() throws JOSEException {
+        when(configurationService.isPublishNextExternalTokenSigningKeysEnabledV3())
+                .thenReturn(true);
+        when(configurationService.isRsaSigningAvailable()).thenReturn(true);
+        var newTokenSigningKeyV2 = generateECKey();
+        var docAppSigningKey = generateECKey();
+        var newTokenSigningKeyV3 = generateECKey();
+        var newRSATokenSigningKeyV2 =
+                new RSAKeyGenerator(2048).keyID(UUID.randomUUID().toString()).generate();
+        var newRSATokenSigningKeyV3 =
+                new RSAKeyGenerator(2048).keyID(UUID.randomUUID().toString()).generate();
+        when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2())
+                .thenReturn(newTokenSigningKeyV2);
+        when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV3())
+                .thenReturn(newTokenSigningKeyV3);
+        when(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2())
+                .thenReturn(newRSATokenSigningKeyV2);
+        when(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV3())
+                .thenReturn(newRSATokenSigningKeyV3);
+        when(signingJwkCacheService.getPublicDocAppSigningJwkWithOpaqueId())
+                .thenReturn(docAppSigningKey);
+
+        var event = new APIGatewayProxyRequestEvent();
+        var result = handler.handleRequest(event, context);
+
+        var expectedJWKSet =
+                new JWKSet(
+                        List.of(
+                                docAppSigningKey,
+                                newTokenSigningKeyV2,
+                                newTokenSigningKeyV3,
+                                newRSATokenSigningKeyV2,
+                                newRSATokenSigningKeyV3));
+
+        assertThat(result, hasStatus(200));
+        assertThat(result, hasBody(expectedJWKSet.toString(true)));
+    }
+
+    @Test
     void shouldReturn500WhenSigningKeyIsNotPresent() {
         when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2()).thenReturn(null);
 
