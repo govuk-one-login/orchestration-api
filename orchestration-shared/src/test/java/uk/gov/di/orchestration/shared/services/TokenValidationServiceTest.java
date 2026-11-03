@@ -44,11 +44,14 @@ class TokenValidationServiceTest {
     private static final String BASE_URL = "https://example.com";
     private static final String KEY_ID = "14342354354353";
     private static final String NEW_V2_KEY_ID = "14342334554354";
+    private static final String NEW_V3_KEY_ID = "15432334554354";
     private static final String OLD_STORED_KEY_ID = "14442634554354";
     private static final String FAILED_KEY_ID = "14342354354355";
     private ECKey ecJWK;
     private JWSSigner newV2Signer;
     private ECKey newV2ECJWK;
+    private JWSSigner newV3Signer;
+    private ECKey newV3ECJWK;
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -58,7 +61,12 @@ class TokenValidationServiceTest {
 
         newV2ECJWK = generateCustomECKeyPair(NEW_V2_KEY_ID);
         newV2Signer = new ECDSASigner(newV2ECJWK);
+        newV3ECJWK = generateCustomECKeyPair(NEW_V3_KEY_ID);
+        newV3Signer = new ECDSASigner(newV3ECJWK);
         when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2()).thenReturn(newV2ECJWK);
+        when(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV3()).thenReturn(newV3ECJWK);
+        when(configurationService.isPublishNextExternalTokenSigningKeysEnabledV3())
+                .thenReturn(false);
     }
 
     @Test
@@ -84,6 +92,26 @@ class TokenValidationServiceTest {
     }
 
     @Test
+    void shouldSuccessfullyValidateNewECKeyV3AccessTokenWhenFeatureFlagEnabledAndIdMatches() {
+        when(configurationService.isPublishNextExternalTokenSigningKeysEnabledV3())
+                .thenReturn(true);
+        SignedJWT signedAccessToken = createSignedAccessTokenWithV3Signer();
+        assertTrue(
+                tokenValidationService.isTokenSignatureValid(
+                        new BearerAccessToken(signedAccessToken.serialize()).getValue()));
+    }
+
+    @Test
+    void shouldSuccessfullyValidateECKeyV2AccessTokenWhenV3FeatureFlagEnabledButIdDoesNotMatch() {
+        when(configurationService.isPublishNextExternalTokenSigningKeysEnabledV3())
+                .thenReturn(true);
+        SignedJWT signedAccessToken = createSignedAccessTokenWithV2Signer();
+        assertTrue(
+                tokenValidationService.isTokenSignatureValid(
+                        new BearerAccessToken(signedAccessToken.serialize()).getValue()));
+    }
+
+    @Test
     void shouldFailToValidateECKeyAccessTokenIfKeyIdInvalid() throws JOSEException {
         var failedECKey = generateCustomECKeyPair(FAILED_KEY_ID);
         var ecSigner = new ECDSASigner(failedECKey);
@@ -101,6 +129,40 @@ class TokenValidationServiceTest {
 
         when(configurationService.isRsaSigningAvailable()).thenReturn(true);
         when(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2()).thenReturn(newRSAKey);
+
+        SignedJWT signedAccessToken = createCustomSignedAccessToken(newRSASigner, NEW_V2_KEY_ID);
+        assertTrue(
+                tokenValidationService.isTokenSignatureValid(
+                        new BearerAccessToken(signedAccessToken.serialize()).getValue()));
+    }
+
+    @Test
+    void shouldSuccessfullyValidateNewV3RsaSignedAccessTokenWhenFeatureFlagIsEnabled() throws JOSEException {
+        var newRSAKey = generateCustomRsaKeyPair(NEW_V3_KEY_ID);
+        var newRSASigner = new RSASSASigner(newRSAKey);
+
+        when(configurationService.isRsaSigningAvailable()).thenReturn(true);
+        when(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV3()).thenReturn(newRSAKey);
+        when(configurationService.isPublishNextExternalTokenSigningKeysEnabledV3())
+                .thenReturn(true);
+
+        SignedJWT signedAccessToken = createCustomSignedAccessToken(newRSASigner, NEW_V3_KEY_ID);
+        assertTrue(
+                tokenValidationService.isTokenSignatureValid(
+                        new BearerAccessToken(signedAccessToken.serialize()).getValue()));
+    }
+
+    @Test
+    void shouldSuccessfullyValidateNewV2RsaSignedAccessTokenWhenFeatureFlagIsEnabledButKeyIdDoesNotMatch() throws JOSEException {
+        var newRSAKey = generateCustomRsaKeyPair(NEW_V3_KEY_ID);
+        var newRSAV2Key = generateCustomRsaKeyPair(NEW_V2_KEY_ID);
+        var newRSASigner = new RSASSASigner(newRSAV2Key);
+
+        when(configurationService.isRsaSigningAvailable()).thenReturn(true);
+        when(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV3()).thenReturn(newRSAKey);
+        when(configurationService.isPublishNextExternalTokenSigningKeysEnabledV3())
+                .thenReturn(true);
+        when(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2()).thenReturn(newRSAV2Key);
 
         SignedJWT signedAccessToken = createCustomSignedAccessToken(newRSASigner, NEW_V2_KEY_ID);
         assertTrue(
@@ -148,6 +210,18 @@ class TokenValidationServiceTest {
             Date expiryDate = NowHelper.nowPlus(2, ChronoUnit.MINUTES);
 
             SignedJWT signedIdToken = createSignedIdTokenWithV2Key(expiryDate);
+            assertTrue(
+                    tokenValidationService.isReauthTokenSignatureValid(
+                            new BearerAccessToken(signedIdToken.serialize()).getValue()));
+        }
+
+        @Test
+        void shouldSuccessfullyValidateNewECKeyV3ReauthIDTokenWhenFeatureFlagEnabled() {
+            Date expiryDate = NowHelper.nowPlus(2, ChronoUnit.MINUTES);
+            when(configurationService.isPublishNextExternalTokenSigningKeysEnabledV3())
+                    .thenReturn(true);
+
+            SignedJWT signedIdToken = createSignedIdTokenWithV3Key(expiryDate);
             assertTrue(
                     tokenValidationService.isReauthTokenSignatureValid(
                             new BearerAccessToken(signedIdToken.serialize()).getValue()));
@@ -276,6 +350,11 @@ class TokenValidationServiceTest {
                 CLIENT_ID, SUBJECT, BASE_URL, newV2ECJWK, expiryDate);
     }
 
+    private SignedJWT createSignedIdTokenWithV3Key(Date expiryDate) {
+        return TokenGeneratorHelper.generateIDToken(
+                CLIENT_ID, SUBJECT, BASE_URL, newV3ECJWK, expiryDate);
+    }
+
     private SignedJWT createCustomSignedIdToken(Date expiryDate, ECKey ecKey) {
         return TokenGeneratorHelper.generateIDToken(
                 CLIENT_ID, SUBJECT, BASE_URL, ecKey, expiryDate);
@@ -283,6 +362,10 @@ class TokenValidationServiceTest {
 
     private SignedJWT createSignedAccessTokenWithV2Signer() {
         return createCustomSignedAccessToken(newV2Signer, NEW_V2_KEY_ID);
+    }
+
+    private SignedJWT createSignedAccessTokenWithV3Signer() {
+        return createCustomSignedAccessToken(newV3Signer, NEW_V3_KEY_ID);
     }
 
     private SignedJWT createCustomSignedAccessToken(JWSSigner signer, String keyId) {

@@ -65,10 +65,34 @@ public class TokenValidationService {
                     && configuration.isRsaSigningAvailable()) {
                 var newV2PublicKey =
                         signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2();
-                return jwt.verify(new RSASSAVerifier(newV2PublicKey.toRSAKey()));
+                if (configuration.isPublishNextExternalTokenSigningKeysEnabledV3()) {
+                    var newV3PublicKey =
+                            signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV3();
+                    if (Objects.equals(jwt.getHeader().getKeyID(), newV3PublicKey.getKeyID())) {
+                        return jwt.verify(new RSASSAVerifier(newV3PublicKey.toRSAKey()));
+                    } else {
+                        return jwt.verify(new RSASSAVerifier(newV2PublicKey.toRSAKey()));
+                    }
+                } else {
+                    return jwt.verify(
+                            new RSASSAVerifier(
+                                    signingJwkCacheService
+                                            .getNextPublicTokenRsaJwkWithOpaqueIdV2()
+                                            .toRSAKey()));
+                }
             } else {
                 var newV2PublicKey = signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2();
-                return jwt.verify(new ECDSAVerifier(newV2PublicKey.toECKey()));
+                if (configuration.isPublishNextExternalTokenSigningKeysEnabledV3()) {
+                    var newV3PublicKey =
+                            signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV3();
+                    if (Objects.equals(jwt.getHeader().getKeyID(), newV3PublicKey.getKeyID())) {
+                        return jwt.verify(new ECDSAVerifier(newV3PublicKey.toECKey()));
+                    } else {
+                        return jwt.verify(new ECDSAVerifier(newV2PublicKey.toECKey()));
+                    }
+                } else {
+                    return jwt.verify(new ECDSAVerifier(newV2PublicKey.toECKey()));
+                }
             }
 
         } catch (JOSEException | java.text.ParseException e) {
@@ -80,6 +104,15 @@ public class TokenValidationService {
     public boolean isReauthTokenSignatureValid(String tokenValue) {
         try {
             var jwt = SignedJWT.parse(tokenValue);
+
+            if (configuration.isPublishNextExternalTokenSigningKeysEnabledV3()) {
+                var newV3PublicKey = signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV3();
+                if (Objects.equals(jwt.getHeader().getKeyID(), newV3PublicKey.getKeyID())) {
+                    return jwt.verify(new ECDSAVerifier(newV3PublicKey.toECKey()));
+                } else {
+                    return validateWithOldECPublicKey(jwt);
+                }
+            }
 
             var newV2PublicKey = signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2();
             if (Objects.equals(jwt.getHeader().getKeyID(), newV2PublicKey.getKeyID())) {
