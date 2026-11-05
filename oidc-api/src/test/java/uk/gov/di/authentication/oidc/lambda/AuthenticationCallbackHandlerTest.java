@@ -269,6 +269,10 @@ class AuthenticationCallbackHandlerTest {
         when(USER_INFO.getClaim(
                         AuthUserInfoClaims.VERIFIED_MFA_METHOD_TYPE.getValue(), String.class))
                 .thenReturn(MFAMethodType.AUTH_APP.getValue());
+        when(USER_INFO.getBooleanClaim(AuthUserInfoClaims.VERIFIED_PASSKEY.getValue()))
+                .thenReturn(true);
+        when(USER_INFO.getClaim(AuthUserInfoClaims.LOGIN_TYPE.getValue(), String.class))
+                .thenReturn("PROMPTED");
         when(USER_INFO.getBooleanClaim(AuthUserInfoClaims.UPLIFT_REQUIRED.getValue()))
                 .thenReturn(false);
         when(CONTEXT.getAwsRequestId()).thenReturn("test-request-id");
@@ -633,6 +637,40 @@ class AuthenticationCallbackHandlerTest {
         assertThat(
                 OrchSessionItem.AccountState.UNKNOWN,
                 equalTo(orchSessionCaptor.getAllValues().get(0).getIsNewAccount()));
+    }
+
+    @Test
+    void shouldOmitPasskeyAndLoginTypeMetricDimensionsWhenClaimsAreMissing()
+            throws UnsuccessfulCredentialResponseException {
+        when(USER_INFO.getBooleanClaim(AuthUserInfoClaims.VERIFIED_PASSKEY.getValue()))
+                .thenReturn(null);
+        when(USER_INFO.getClaim(AuthUserInfoClaims.LOGIN_TYPE.getValue(), String.class))
+                .thenReturn(null);
+        usingValidSession();
+        usingValidClientSession();
+        usingValidClient();
+        var event = new APIGatewayProxyRequestEvent();
+        setValidHeadersAndQueryParameters(event);
+        when(tokenService.getToken(any())).thenReturn(SUCCESSFUL_TOKEN_RESPONSE);
+        when(tokenService.sendUserInfoDataRequest(any(HTTPRequest.class))).thenReturn(USER_INFO);
+
+        var response = handler.handleRequest(event, CONTEXT);
+
+        assertThat(response, hasStatus(302));
+        verify(metrics)
+                .increment(
+                        eq("AuthenticationCallback"),
+                        argThat(
+                                dimensions ->
+                                        !dimensions.containsKey("VerifiedPasskey")
+                                                && !dimensions.containsKey("LoginType")));
+        verify(metrics)
+                .increment(
+                        eq("SignIn"),
+                        argThat(
+                                dimensions ->
+                                        !dimensions.containsKey("VerifiedPasskey")
+                                                && !dimensions.containsKey("LoginType")));
     }
 
     @Test

@@ -317,6 +317,8 @@ public class AuthenticationAuthorizationService {
         claimsSet.add(AuthUserInfoClaims.EMAIL);
         claimsSet.add(AuthUserInfoClaims.LOCAL_ACCOUNT_ID);
         claimsSet.add(AuthUserInfoClaims.VERIFIED_MFA_METHOD_TYPE);
+        claimsSet.add(AuthUserInfoClaims.VERIFIED_PASSKEY);
+        claimsSet.add(AuthUserInfoClaims.LOGIN_TYPE);
         claimsSet.add(AuthUserInfoClaims.UPLIFT_REQUIRED);
         claimsSet.add(AuthUserInfoClaims.ACHIEVED_CREDENTIAL_STRENGTH);
         if (identityRequired) {
