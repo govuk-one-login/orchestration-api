@@ -269,6 +269,10 @@ class AuthenticationCallbackHandlerTest {
         when(USER_INFO.getClaim(
                         AuthUserInfoClaims.VERIFIED_MFA_METHOD_TYPE.getValue(), String.class))
                 .thenReturn(MFAMethodType.AUTH_APP.getValue());
+        when(USER_INFO.getBooleanClaim(AuthUserInfoClaims.VERIFIED_PASSKEY.getValue()))
+                .thenReturn(true);
+        when(USER_INFO.getClaim(AuthUserInfoClaims.LOGIN_TYPE.getValue(), String.class))
+                .thenReturn("PROMPTED");
         when(USER_INFO.getBooleanClaim(AuthUserInfoClaims.UPLIFT_REQUIRED.getValue()))
                 .thenReturn(false);
         when(CONTEXT.getAwsRequestId()).thenReturn("test-request-id");

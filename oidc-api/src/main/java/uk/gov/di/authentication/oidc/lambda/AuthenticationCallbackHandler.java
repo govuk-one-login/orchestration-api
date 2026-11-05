@@ -433,7 +433,11 @@ public class AuthenticationCallbackHandler
                                 orchClientSession.getVtrList(),
                                 userInfo.getClaim(
                                         AuthUserInfoClaims.VERIFIED_MFA_METHOD_TYPE.getValue(),
-                                        String.class));
+                                        String.class),
+                                userInfo.getBooleanClaim(
+                                        AuthUserInfoClaims.VERIFIED_PASSKEY.getValue()),
+                                userInfo.getClaim(
+                                        AuthUserInfoClaims.LOGIN_TYPE.getValue(), String.class));
 
                 user =
                         user.withUserId(userInfo.getSubject().getValue())
@@ -694,7 +698,9 @@ public class AuthenticationCallbackHandler
             String clientId,
             String clientName,
             List<VectorOfTrust> vtrList,
-            String verifiedMfaMethodType) {
+            String verifiedMfaMethodType,
+            Boolean verifiedPasskey,
+            String loginType) {
         Map<String, String> dimensions =
                 new HashMap<>(
                         Map.of(
@@ -715,6 +721,17 @@ public class AuthenticationCallbackHandler
             LOG.info(
                     "No mfa method to set. User is either authenticated or signing in from a low level service");
         }
+        if (Objects.nonNull(verifiedPasskey)) {
+            dimensions.put("VerifiedPasskey", verifiedPasskey.toString());
+        } else {
+            LOG.info("VerifiedPasskey is not set");
+        }
+        if (Objects.nonNull(loginType)) {
+            dimensions.put("LoginType", loginType);
+        } else {
+            LOG.info("LoginType is not set");
+        }
+
         var orderedVtrList = VectorOfTrust.orderVtrList(vtrList);
         var mfaRequired = MfaHelper.mfaRequired(orderedVtrList);
 
