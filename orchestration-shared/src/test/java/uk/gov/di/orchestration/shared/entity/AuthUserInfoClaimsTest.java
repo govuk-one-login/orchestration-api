@@ -25,6 +25,8 @@ class AuthUserInfoClaimsTest {
                 "legacy_subject_id",
                 "phone_number",
                 "verified_mfa_method_type",
+                "verified_passkey",
+                "login_type",
                 "email",
                 "new_account",
                 "achieved_credential_strength",
@@ -37,7 +39,7 @@ class AuthUserInfoClaimsTest {
 
     @Test
     void shouldReturnCorrectNumberOfClaimsSupported() {
-        assertThat(AuthUserInfoClaims.getAllValidClaims().size(), equalTo(14));
+        assertThat(AuthUserInfoClaims.getAllValidClaims().size(), equalTo(16));
     }
 
     @ParameterizedTest
