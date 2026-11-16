@@ -829,7 +829,7 @@ class AuthenticationAuthorizationServiceTest {
     void shouldThrowWhenSingleFactorAccountDeletionErrorReceivedAndOnReauthJourney() {
         when(configurationService.isSingleFactorAccountDeletionEnabled()).thenReturn(true);
         Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("error", SFAD_ERROR.toString());
+        queryParams.put("error", SFAD_ERROR.getValue());
 
         assertThrows(
                 AuthenticationCallbackValidationException.class,
@@ -840,7 +840,7 @@ class AuthenticationAuthorizationServiceTest {
     void shouldNotThrowWhenSingleFactorAccountDeletionErrorReceivedAndNotOnReauthJourney() {
         when(configurationService.isSingleFactorAccountDeletionEnabled()).thenReturn(true);
         Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("error", SFAD_ERROR.toString());
+        queryParams.put("error", SFAD_ERROR.getValue());
 
         assertDoesNotThrow(() -> authService.validateRequest(queryParams, SESSION_ID, false));
     }

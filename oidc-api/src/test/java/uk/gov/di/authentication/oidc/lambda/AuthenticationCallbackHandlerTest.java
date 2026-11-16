@@ -1519,7 +1519,7 @@ class AuthenticationCallbackHandlerTest {
         private static APIGatewayProxyRequestEvent createRequestForSfadJourney() {
             var event = new APIGatewayProxyRequestEvent();
             Map<String, String> queryParameters = new HashMap<>();
-            queryParameters.put("error", AuthErrorCodes.SFAD_ERROR.toString());
+            queryParameters.put("error", AuthErrorCodes.SFAD_ERROR.getValue());
             event.setHeaders(Map.of(COOKIE_HEADER_NAME, buildCookieString()));
             event.setRequestContext(contextWithSourceIp("123.123.123.123"));
             event.setQueryStringParameters(queryParameters);

@@ -306,7 +306,7 @@ public class AuthenticationCallbackHandler
                     OrchestrationAuditableEvent.AUTH_CALLBACK_RESPONSE_RECEIVED, clientId, user);
             var errorCode = input.getQueryStringParameters().get("error");
             if (configurationService.isSingleFactorAccountDeletionEnabled()
-                    && SFAD_ERROR.toString().equals(errorCode)) {
+                    && SFAD_ERROR.getValue().equals(errorCode)) {
                 LOG.info(
                         "Single factor account deletion error received. Deleting old sessions and generating new ones");
                 var newSessionId = IdGenerator.generate();
