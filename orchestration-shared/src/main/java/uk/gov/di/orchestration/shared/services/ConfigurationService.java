@@ -418,8 +418,8 @@ public class ConfigurationService implements BaseLambdaConfiguration, AuditPubli
                 .contains(getEnvironment());
     }
 
-    public boolean isSingleFactorAccountDeletionEnabled() {
-        return getFlagOrFalse("SINGLE_FACTOR_ACCOUNT_DELETION_ENABLED");
+    public boolean isSelfServeAccountDeletionEnabled() {
+        return getFlagOrFalse("SELF_SERVE_ACCOUNT_DELETION_ENABLED");
     }
 
     public boolean isNewSpotRequestQueueWritingEnabled() {

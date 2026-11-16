@@ -247,7 +247,7 @@ class AuthenticationCallbackHandlerTest {
                 .thenReturn(URI.create(TEST_AUTH_BACKEND_BASE_URL));
         when(configurationService.isAccountInterventionServiceCallEnabled()).thenReturn(false);
         when(configurationService.isAccountInterventionServiceActionEnabled()).thenReturn(false);
-        when(configurationService.isSingleFactorAccountDeletionEnabled()).thenReturn(false);
+        when(configurationService.isSelfServeAccountDeletionEnabled()).thenReturn(false);
         when(configurationService.getOrchestrationClientId()).thenReturn(ORCH_CLIENT_ID);
         when(accountInterventionService.getAccountIntervention(anyString(), any(), any()))
                 .thenReturn(
@@ -1361,13 +1361,13 @@ class AuthenticationCallbackHandlerTest {
     }
 
     @Nested
-    class SingleFactorAccountDeletion {
+    class SelfServeAccountDeletion {
         static String NEW_SESSION_ID = "new-session-id";
         static String NEW_CLIENT_SESSION_ID = "new-client-session-id";
 
         @BeforeEach
         void setup() {
-            when(configurationService.isSingleFactorAccountDeletionEnabled()).thenReturn(true);
+            when(configurationService.isSelfServeAccountDeletionEnabled()).thenReturn(true);
         }
 
         @Test
@@ -1519,7 +1519,7 @@ class AuthenticationCallbackHandlerTest {
         private static APIGatewayProxyRequestEvent createRequestForSfadJourney() {
             var event = new APIGatewayProxyRequestEvent();
             Map<String, String> queryParameters = new HashMap<>();
-            queryParameters.put("error", AuthErrorCodes.SFAD_ERROR.getValue());
+            queryParameters.put("error", AuthErrorCodes.SSAD_ERROR.getValue());
             event.setHeaders(Map.of(COOKIE_HEADER_NAME, buildCookieString()));
             event.setRequestContext(contextWithSourceIp("123.123.123.123"));
             event.setQueryStringParameters(queryParameters);

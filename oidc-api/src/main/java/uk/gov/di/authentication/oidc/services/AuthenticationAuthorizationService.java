@@ -46,7 +46,7 @@ import java.util.Optional;
 
 import static com.nimbusds.oauth2.sdk.OAuth2Error.ACCESS_DENIED_CODE;
 import static com.nimbusds.openid.connect.sdk.SubjectType.PUBLIC;
-import static uk.gov.di.authentication.oidc.entity.AuthErrorCodes.SFAD_ERROR;
+import static uk.gov.di.authentication.oidc.entity.AuthErrorCodes.SSAD_ERROR;
 import static uk.gov.di.authentication.oidc.helpers.AuthRequestHelper.getCustomParameterOpt;
 import static uk.gov.di.orchestration.shared.conditions.IdentityHelper.identityRequired;
 
@@ -110,13 +110,13 @@ public class AuthenticationAuthorizationService {
                             .findFirst();
             if (reauthError.isPresent()) {
                 throw new AuthenticationCallbackValidationException(reauthError.get(), true);
-            } else if (configurationService.isSingleFactorAccountDeletionEnabled()
-                    && SFAD_ERROR.toString().equals(queryParams.get("error"))) {
+            } else if (configurationService.isSelfServeAccountDeletionEnabled()
+                    && SSAD_ERROR.getValue().equals(queryParams.get("error"))) {
                 if (!reauthRequested) {
-                    LOG.info("Performing single factor account deletion on an auth journey");
+                    LOG.info("Performing self serve account deletion on an auth journey");
                     return;
                 } else {
-                    LOG.warn("Cannot perform single factor account deletion on a reauth journey");
+                    LOG.warn("Cannot perform self serve account deletion on a reauth journey");
                     throw new AuthenticationCallbackValidationException();
                 }
 

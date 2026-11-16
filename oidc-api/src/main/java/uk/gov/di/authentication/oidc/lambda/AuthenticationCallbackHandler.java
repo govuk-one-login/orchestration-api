@@ -90,7 +90,7 @@ import java.util.Optional;
 import static com.nimbusds.oauth2.sdk.http.HTTPRequest.Method.GET;
 import static java.lang.String.format;
 import static uk.gov.di.authentication.oidc.domain.OrchestrationAuditableEvent.AUTH_UNSUCCESSFUL_USERINFO_RESPONSE_RECEIVED;
-import static uk.gov.di.authentication.oidc.entity.AuthErrorCodes.SFAD_ERROR;
+import static uk.gov.di.authentication.oidc.entity.AuthErrorCodes.SSAD_ERROR;
 import static uk.gov.di.authentication.oidc.helpers.AuthRequestHelper.getCustomParameterOpt;
 import static uk.gov.di.orchestration.shared.conditions.IdentityHelper.identityRequired;
 import static uk.gov.di.orchestration.shared.domain.RequestHeaders.SESSION_ID_HEADER;
@@ -305,10 +305,10 @@ public class AuthenticationCallbackHandler
             auditService.submitAuditEvent(
                     OrchestrationAuditableEvent.AUTH_CALLBACK_RESPONSE_RECEIVED, clientId, user);
             var errorCode = input.getQueryStringParameters().get("error");
-            if (configurationService.isSingleFactorAccountDeletionEnabled()
-                    && SFAD_ERROR.getValue().equals(errorCode)) {
+            if (configurationService.isSelfServeAccountDeletionEnabled()
+                    && SSAD_ERROR.getValue().equals(errorCode)) {
                 LOG.info(
-                        "Single factor account deletion error received. Deleting old sessions and generating new ones");
+                        "Self serve account deletion error received. Deleting old sessions and generating new ones");
                 var newSessionId = IdGenerator.generate();
                 var newClientSessionId = IdGenerator.generate();
                 LOG.info(
