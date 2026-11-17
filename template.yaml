@@ -91,7 +91,7 @@ Conditions:
       !FindInMap [EnvironmentConfiguration, !Ref Environment, authStubEnabled],
       true,
     ]
-  UseSingleFactorAccountDeletion: !Equals [dev, !Ref Environment]
+  UseSelfServeAccountDeletion: !Equals [dev, !Ref Environment]
   UseSyncWaitForSpot:
     !Or [
       !Equals [dev, !Ref Environment],
@@ -3031,8 +3031,8 @@ Resources:
           STORAGE_TOKEN_SIGNING_KEY_ALIAS: !Ref OrchStorageTokenSigningKmsKeyAlias
           SEND_STORAGE_TOKEN_TO_IPV_ENABLED: true
           JWK_CACHE_EXPIRATION_IN_SECONDS: 300
-          SINGLE_FACTOR_ACCOUNT_DELETION_ENABLED: !If
-            - UseSingleFactorAccountDeletion
+          SELF_SERVE_ACCOUNT_DELETION_ENABLED: !If
+            - UseSelfServeAccountDeletion
             - true
             - false
           ORCH_TO_AUTH_ENCRYPTION_KEY_PARAM: !If

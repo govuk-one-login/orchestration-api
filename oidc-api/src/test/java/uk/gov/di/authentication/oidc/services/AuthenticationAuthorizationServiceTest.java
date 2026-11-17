@@ -81,7 +81,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static uk.gov.di.authentication.oidc.entity.AuthErrorCodes.SFAD_ERROR;
+import static uk.gov.di.authentication.oidc.entity.AuthErrorCodes.SSAD_ERROR;
 import static uk.gov.di.authentication.oidc.services.AuthenticationAuthorizationService.AUTHENTICATION_STATE_STORAGE_PREFIX;
 import static uk.gov.di.authentication.oidc.services.AuthenticationAuthorizationService.GOOGLE_ANALYTICS_QUERY_PARAMETER_KEY;
 import static uk.gov.di.orchestration.shared.entity.AuthUserInfoClaims.ACCOUNT_DATA_API_ACCESS_TOKEN;
@@ -125,7 +125,7 @@ class AuthenticationAuthorizationServiceTest {
                         Optional.of(
                                 new StateItem(AUTHENTICATION_STATE_STORAGE_PREFIX + SESSION_ID)
                                         .withState(STORED_STATE.getValue())));
-        when(configurationService.isSingleFactorAccountDeletionEnabled()).thenReturn(false);
+        when(configurationService.isSelfServeAccountDeletionEnabled()).thenReturn(false);
         when(configurationService.getOrchestrationClientId())
                 .thenReturn(TEST_ORCHESTRATOR_CLIENT_ID);
         when(configurationService.getOrchestrationRedirectURI()).thenReturn(ORCH_REDIRECT_URI);
@@ -826,10 +826,10 @@ class AuthenticationAuthorizationServiceTest {
     }
 
     @Test
-    void shouldThrowWhenSingleFactorAccountDeletionErrorReceivedAndOnReauthJourney() {
-        when(configurationService.isSingleFactorAccountDeletionEnabled()).thenReturn(true);
+    void shouldThrowWhenSelfServeAccountDeletionErrorReceivedAndOnReauthJourney() {
+        when(configurationService.isSelfServeAccountDeletionEnabled()).thenReturn(true);
         Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("error", SFAD_ERROR.toString());
+        queryParams.put("error", SSAD_ERROR.getValue());
 
         assertThrows(
                 AuthenticationCallbackValidationException.class,
@@ -837,10 +837,10 @@ class AuthenticationAuthorizationServiceTest {
     }
 
     @Test
-    void shouldNotThrowWhenSingleFactorAccountDeletionErrorReceivedAndNotOnReauthJourney() {
-        when(configurationService.isSingleFactorAccountDeletionEnabled()).thenReturn(true);
+    void shouldNotThrowWhenSelfServeAccountDeletionErrorReceivedAndNotOnReauthJourney() {
+        when(configurationService.isSelfServeAccountDeletionEnabled()).thenReturn(true);
         Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("error", SFAD_ERROR.toString());
+        queryParams.put("error", SSAD_ERROR.getValue());
 
         assertDoesNotThrow(() -> authService.validateRequest(queryParams, SESSION_ID, false));
     }
