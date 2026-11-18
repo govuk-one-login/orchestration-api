@@ -16,6 +16,7 @@ import com.nimbusds.openid.connect.sdk.OIDCScopeValue;
 import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -124,11 +125,19 @@ class QueryParamsAuthorizeValidatorTest {
 
     private static Stream<Arguments> invalidVtrAttributes() {
         return Stream.of(
-                Arguments.of(jsonArrayOf("Cm")),
-                Arguments.of(jsonArrayOf("Cl.Cm.P3")),
-                Arguments.of(jsonArrayOf("Cl.P0", "Cl.Cm.P2")),
-                Arguments.of(jsonArrayOf("Cm.Cl.P1", "P1.Cl")),
-                Arguments.of(jsonArrayOf("Cl.PCL250.Cm", "Cl.PCL200.Cm")));
+                Arguments.of(Named.of("Invalid CredentialTrustLevel", jsonArrayOf("Cm"))),
+                Arguments.of(
+                        Named.of(
+                                "VTR cannot contain both identity and non-identity vectors",
+                                jsonArrayOf("Cl.P0", "Cl.Cm.P2"))),
+                Arguments.of(
+                        Named.of(
+                                "Non-zero identity confidence must require at least Cl.Cm credential trust",
+                                jsonArrayOf("Cm.Cl.P1", "P1.Cl"))),
+                Arguments.of(
+                        Named.of(
+                                "Invalid LevelOfConfidence provided",
+                                jsonArrayOf("Cl.PCL250.Cm", "Cl.PCL200.Cm"))));
     }
 
     @ParameterizedTest
@@ -142,16 +151,16 @@ class QueryParamsAuthorizeValidatorTest {
                         VALID_SCOPES,
                         invalidVtrAttribute,
                         Optional.empty());
-        var errorObject = queryParamsAuthorizeValidator.validate(authRequest);
+        var authRequestErrorOpt = queryParamsAuthorizeValidator.validate(authRequest);
 
-        assertTrue(errorObject.isPresent());
-
+        assertTrue(authRequestErrorOpt.isPresent());
+        var authRequestError = authRequestErrorOpt.get();
         assertThat(
-                errorObject.get().errorObject(),
-                equalTo(
-                        new ErrorObject(
-                                OAuth2Error.INVALID_REQUEST_CODE, "Request vtr not valid")));
-        assertEquals(STATE, errorObject.get().state());
+                authRequestError.errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                authRequestError.errorObject().getDescription(), equalTo("Request vtr not valid"));
+        assertEquals(STATE, authRequestErrorOpt.get().state());
     }
 
     private static Stream<Arguments> invalidChannelAttributes() {
