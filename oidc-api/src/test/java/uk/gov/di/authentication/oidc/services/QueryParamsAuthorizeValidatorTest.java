@@ -1,6 +1,5 @@
 package uk.gov.di.authentication.oidc.services;
 
-import com.nimbusds.oauth2.sdk.ErrorObject;
 import com.nimbusds.oauth2.sdk.OAuth2Error;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.ResponseType;
@@ -795,16 +794,17 @@ class QueryParamsAuthorizeValidatorTest {
                         .state(STATE)
                         .nonce(NONCE)
                         .maxAge(-5);
-        var errorObject = queryParamsAuthorizeValidator.validate(authRequestBuilder.build());
+        var errorOpt = queryParamsAuthorizeValidator.validate(authRequestBuilder.build());
 
-        assertTrue(errorObject.isPresent());
+        assertTrue(errorOpt.isPresent());
+        var authRequestError = errorOpt.get();
         assertThat(
-                errorObject.get().errorObject(),
-                equalTo(
-                        new ErrorObject(
-                                OAuth2Error.INVALID_REQUEST_CODE,
-                                "Value of max age cannot be lower than -1")));
-        assertEquals(STATE, errorObject.get().state());
+                authRequestError.errorObject().getCode(),
+                equalTo(OAuth2Error.INVALID_REQUEST_CODE));
+        assertThat(
+                authRequestError.errorObject().getDescription(),
+                equalTo("Max age is negative in query params"));
+        assertEquals(STATE, authRequestError.state());
     }
 
     @Test
