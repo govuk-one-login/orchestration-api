@@ -43,14 +43,17 @@ paths:
         timeoutInMillis: 29000
         type: "aws_proxy"
   /.well-known/storage-token-jwk.json:
-    get:
-      x-amazon-apigateway-integration:
-        uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StorageTokenJwkFunction.Arn}:latest/invocations"
-        httpMethod: "POST"
-        passthroughBehavior: "when_no_match"
-        timeoutInMillis: 29000
-        type: "aws_proxy"
+    Fn::If:
+      - IsNotDevEnvironment
+      - get:
+          x-amazon-apigateway-integration:
+            uri:
+              Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StorageTokenJwkFunction.Arn}:latest/invocations"
+            httpMethod: "POST"
+            passthroughBehavior: "when_no_match"
+            timeoutInMillis: 29000
+            type: "aws_proxy"
+      - ${AWS::NoValue}
   /userinfo:
     get:
       x-amazon-apigateway-integration:
@@ -97,23 +100,29 @@ paths:
         timeoutInMillis: 29000
         type: "aws_proxy"
   /.well-known/ipv-jwks.json:
-    get:
-      x-amazon-apigateway-integration:
-        uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IpvJwksFunction.Arn}:latest/invocations"
-        httpMethod: "POST"
-        passthroughBehavior: "when_no_match"
-        timeoutInMillis: 29000
-        type: "aws_proxy"
+    Fn::If:
+      - IsNotDevEnvironment
+      - get:
+          x-amazon-apigateway-integration:
+            uri:
+              Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IpvJwksFunction.Arn}:latest/invocations"
+            httpMethod: "POST"
+            passthroughBehavior: "when_no_match"
+            timeoutInMillis: 29000
+            type: "aws_proxy"
+      - ${AWS::NoValue}
   /.well-known/sis-jwks.json:
-    get:
-      x-amazon-apigateway-integration:
-        uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SISJwksFunction.Arn}:latest/invocations"
-        httpMethod: "POST"
-        passthroughBehavior: "when_no_match"
-        timeoutInMillis: 29000
-        type: "aws_proxy"
+    Fn::If:
+      - IsNotDevEnvironment
+      - get:
+          x-amazon-apigateway-integration:
+            uri:
+              Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SISJwksFunction.Arn}:latest/invocations"
+            httpMethod: "POST"
+            passthroughBehavior: "when_no_match"
+            timeoutInMillis: 29000
+            type: "aws_proxy"
+      - ${AWS::NoValue}
   /authorize:
     get:
       x-amazon-apigateway-integration:
@@ -133,14 +142,17 @@ paths:
         timeoutInMillis: 29000
         type: "aws_proxy"
   /.well-known/auth-jwks.json:
-    get:
-      x-amazon-apigateway-integration:
-        uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthJwksFunction.Arn}:latest/invocations"
-        httpMethod: "POST"
-        passthroughBehavior: "when_no_match"
-        timeoutInMillis: 29000
-        type: "aws_proxy"
+    Fn::If:
+      - IsNotDevEnvironment
+      - get:
+          x-amazon-apigateway-integration:
+            uri:
+              Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthJwksFunction.Arn}:latest/invocations"
+            httpMethod: "POST"
+            passthroughBehavior: "when_no_match"
+            timeoutInMillis: 29000
+            type: "aws_proxy"
+      - ${AWS::NoValue}
   /connect/register:
     Fn::If:
       - IsNotProduction
@@ -197,6 +209,63 @@ paths:
         passthroughBehavior: "when_no_match"
         timeoutInMillis: 29000
         type: "mock"
+  /.well-known/{key+}:
+    Fn::If:
+      - IsDev
+      - get:
+          parameters:
+            - name: key
+              in: path
+              required: true
+              schema:
+                type: string
+          responses:
+            "200":
+              description: Asset
+              headers:
+                Content-Type:
+                  schema:
+                    type: string
+                Content-Length:
+                  schema:
+                    type: string
+            "403":
+              description: Not found
+              headers:
+                Content-Type:
+                  schema:
+                    type: string
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+          x-amazon-apigateway-integration:
+            type: aws
+            httpMethod: GET
+            credentials:
+              Fn::GetAtt: [WellKnownJwksBucketAccessApiRole, Arn]
+            uri:
+              Fn::Sub: "arn:aws:apigateway:${AWS::Region}:s3:path/${WellKnownJwksBucket}/.well-known/{key}"
+            passthroughBehavior: when_no_match
+            requestParameters:
+              integration.request.path.key: "method.request.path.key"
+            responses:
+              default:
+                statusCode: "200"
+                responseParameters:
+                  method.response.header.Content-Type: "integration.response.header.Content-Type"
+                  method.response.header.Content-Length: "integration.response.header.Content-Length"
+              "403|404":
+                statusCode: "403"
+                responseParameters:
+                  method.response.header.Content-Type: "'application/json'"
+                responseTemplates:
+                  application/json: '{"message":"Missing Authentication Token"}'
+      - ${AWS::NoValue}
+
 components:
   schemas:
     Empty:
