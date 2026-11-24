@@ -34,5 +34,9 @@
   {
     "ParameterKey": "LambdaApiEnabled",
     "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "S3ApiEnabled",
+    "ParameterValue": "Yes"
   }
 ]
