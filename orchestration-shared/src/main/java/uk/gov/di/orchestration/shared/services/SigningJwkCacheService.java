@@ -104,6 +104,7 @@ public class SigningJwkCacheService {
     }
 
     private JWK createJwk(String keyId) {
+        LOG.info("Key does not exist in cache, fetching from KMS with ID " + keyId);
         var getPublicKeyRequest = GetPublicKeyRequest.builder().keyId(keyId).build();
         var publicKeyResponse = kmsConnectionService.getPublicKey(getPublicKeyRequest);
 
