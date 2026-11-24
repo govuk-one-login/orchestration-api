@@ -109,7 +109,10 @@ Conditions:
       !Equals [production, !Ref Environment],
     ]
   SisEnabled: !Equals [dev, !Ref Environment]
-  # Comment to force re-deployment of template - this can be deleted once the staging API GW/CloudFront migration is complete.
+  ManageSisSigningKeyWithKeyRotationStack: !Equals [dev, !Ref Environment]
+  ManageSisSigningKeyWithCloudFormation:
+    !Not [!Condition ManageSisSigningKeyWithKeyRotationStack]
+# Comment to force re-deployment of template - this can be deleted once the staging API GW/CloudFront migration is complete.
 
 Mappings:
   EnvironmentConfiguration:
@@ -3108,7 +3111,10 @@ Resources:
                     !Ref Environment,
                     serviceDomain,
                   ]
-          SIS_TOKEN_SIGNING_KEY_ALIAS: !Ref OrchSISTokenSigningKmsKeyAlias
+          SIS_TOKEN_SIGNING_KEY_ALIAS: !If
+            - ManageSisSigningKeyWithKeyRotationStack
+            - !Sub "alias/${Environment}-orch-sis-token-auth-kms-key-alias"
+            - !Ref OrchSISTokenSigningKmsKeyAlias
           SIS_JWKS_URL: !If
             - IpvExists
             - !Sub
@@ -3606,7 +3612,10 @@ Resources:
         Variables:
           # checkov:skip=CKV_AWS_173: These environment variables do not require encryption.
           ENVIRONMENT: !Sub ${Environment}
-          SIS_TOKEN_SIGNING_KEY_ALIAS: !Ref OrchSISTokenSigningKmsKeyAlias
+          SIS_TOKEN_SIGNING_KEY_ALIAS: !If
+            - ManageSisSigningKeyWithKeyRotationStack
+            - !Sub "alias/${Environment}-orch-sis-token-auth-kms-key-alias"
+            - !Ref OrchSISTokenSigningKmsKeyAlias
       Policies:
         - !Ref SISTokenSigningKmsAccessPolicy
       Tags:
@@ -5052,7 +5061,10 @@ Resources:
                     !Ref Environment,
                     serviceDomain,
                   ]
-          SIS_TOKEN_SIGNING_KEY_ALIAS: !Ref OrchSISTokenSigningKmsKeyAlias
+          SIS_TOKEN_SIGNING_KEY_ALIAS: !If
+            - ManageSisSigningKeyWithKeyRotationStack
+            - !Sub "alias/${Environment}-orch-sis-token-auth-kms-key-alias"
+            - !Ref OrchSISTokenSigningKmsKeyAlias
           SIS_JWKS_URL: !If
             - IpvExists
             - !Sub
@@ -7109,13 +7121,28 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: AllowSISTokenSigningKms
-            Effect: Allow
-            Action:
-              - kms:Sign
-              - kms:GetPublicKey
-            Resource:
-              - !GetAtt OrchSISTokenSigningKmsKey.Arn
+          - !If
+            - ManageSisSigningKeyWithCloudFormation
+            - Sid: AllowSISTokenSigningKmsExact
+              Effect: Allow
+              Action:
+                - kms:Sign
+                - kms:GetPublicKey
+              Resource:
+                - !GetAtt OrchSISTokenSigningKmsKey.Arn
+            - !Ref AWS::NoValue
+          - !If
+            - ManageSisSigningKeyWithKeyRotationStack
+            - Sid: AllowSISTokenSigningKmsAlias
+              Effect: Allow
+              Action:
+                - kms:Sign
+                - kms:GetPublicKey
+              Resource: "*"
+              Condition:
+                ForAnyValue:StringEquals:
+                  kms:ResourceAliases: !Sub alias/${Environment}-orch-sis-token-auth-kms-key-alias
+            - !Ref AWS::NoValue
 
   OrchToAuthSigningKmsAccessPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -8461,12 +8488,14 @@ Resources:
   #region SIS token signing key pair
 
   OrchSISTokenSigningKmsKeyAlias:
+    Condition: ManageSisSigningKeyWithCloudFormation
     Type: AWS::KMS::Alias
     Properties:
       AliasName: !Sub "alias/${Environment}-orch-sis-token-auth-kms-key-alias"
       TargetKeyId: !Ref OrchSISTokenSigningKmsKey
 
   OrchSISTokenSigningKmsKey:
+    Condition: ManageSisSigningKeyWithCloudFormation
     Type: AWS::KMS::Key
     Properties:
       Description: KMS signing key for authentication to the SIS token endpoint
