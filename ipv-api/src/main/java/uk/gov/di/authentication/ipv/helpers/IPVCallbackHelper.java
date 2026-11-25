@@ -51,6 +51,7 @@ import static uk.gov.di.orchestration.shared.services.AuditService.MetadataPair.
 
 public class IPVCallbackHelper {
     private static final Logger LOG = LogManager.getLogger(IPVCallbackHelper.class);
+    private static final String NO_LEVEL_OF_CONFIDENCE = "none";
     protected final Json objectMapper;
     private final AuditService auditService;
     private final AuthCodeResponseGenerationService authCodeResponseService;
@@ -187,7 +188,8 @@ public class IPVCallbackHelper {
                 email,
                 subjectId,
                 rpPairwiseSubject.getValue(),
-                internalPairwiseSubjectId);
+                internalPairwiseSubjectId,
+                userIdentityUserInfo);
     }
 
     public AuthenticationSuccessResponse generateAuthenticationResponse(
@@ -201,7 +203,8 @@ public class IPVCallbackHelper {
             String email,
             String subjectId,
             String rpPairwiseSubjectId,
-            String internalPairwiseSubjectId) {
+            String internalPairwiseSubjectId,
+            UserInfo userIdentityUserInfo) {
         var authCode =
                 orchAuthCodeService.generateAndSaveAuthorisationCode(
                         clientId,
@@ -230,7 +233,7 @@ public class IPVCallbackHelper {
                 rpPairwiseSubjectId,
                 internalPairwiseSubjectId,
                 authCode);
-        sendCloudwatchMetrics(orchSession, clientId, clientName);
+        sendCloudwatchMetrics(orchSession, clientId, clientName, userIdentityUserInfo);
         authCodeResponseService.saveSession(false, orchSessionService, orchSession);
         return authenticationResponse;
     }
@@ -269,7 +272,10 @@ public class IPVCallbackHelper {
     }
 
     private void sendCloudwatchMetrics(
-            OrchSessionItem orchSession, String clientId, String clientName) {
+            OrchSessionItem orchSession,
+            String clientId,
+            String clientName,
+            UserInfo userIdentityUserInfo) {
         var dimensions =
                 authCodeResponseService.getDimensions(orchSession, clientName, clientId, false);
 
@@ -279,8 +285,13 @@ public class IPVCallbackHelper {
         metrics.increment(
                 "orchIdentityJourneyCompleted",
                 Map.of(
-                        "clientName", clientName,
-                        "clientId", clientId));
+                        "clientName",
+                        clientName,
+                        "clientId",
+                        clientId,
+                        "levelOfConfidence",
+                        Optional.ofNullable(userIdentityUserInfo.getStringClaim(VOT.getValue()))
+                                .orElse(NO_LEVEL_OF_CONFIDENCE)));
         metrics.increment("orchJourneyCompleted", Map.of("journeyType", "identity"));
     }
 
