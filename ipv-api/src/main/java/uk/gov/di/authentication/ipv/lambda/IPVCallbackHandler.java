@@ -468,7 +468,8 @@ public class IPVCallbackHandler
                                             authUserInfo.getEmailAddress(),
                                             authUserInfo.getSubject().getValue(),
                                             rpPairwiseSubject.getValue(),
-                                            orchSession.getInternalCommonSubjectId())
+                                            orchSession.getInternalCommonSubjectId(),
+                                            userIdentityUserInfo)
                                     .toURI();
                 }
             } else {

@@ -1108,7 +1108,8 @@ class IPVCallbackHandlerTest {
                             anyString(),
                             anyString(),
                             anyString(),
-                            anyString()))
+                            anyString(),
+                            any(UserInfo.class)))
                     .thenReturn(
                             new AuthenticationSuccessResponse(
                                     REDIRECT_URI,
