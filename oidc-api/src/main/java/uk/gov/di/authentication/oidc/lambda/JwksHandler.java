@@ -65,8 +65,16 @@ public class JwksHandler
 
             signingKeys.add(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV2());
 
+            if (configurationService.isPublishNextExternalTokenSigningKeysEnabledV3()) {
+                signingKeys.add(signingJwkCacheService.getNextPublicTokenJwkWithOpaqueIdV3());
+            }
+
             if (configurationService.isRsaSigningAvailable()) {
                 signingKeys.add(signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV2());
+                if (configurationService.isPublishNextExternalTokenSigningKeysEnabledV3()) {
+                    signingKeys.add(
+                            signingJwkCacheService.getNextPublicTokenRsaJwkWithOpaqueIdV3());
+                }
             }
 
             JWKSet jwkSet = new JWKSet(signingKeys);
